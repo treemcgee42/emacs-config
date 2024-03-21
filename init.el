@@ -64,6 +64,17 @@
 (global-hl-line-mode 1)
 (setq global-hl-line-sticky-flag t)
 
+;;; [[ Multiple cursors ]]
+
+(require 'multiple-cursors)
+
+(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+(global-set-key (kbd "C->")         'mc/mark-next-like-this)
+(global-set-key (kbd "C-<")         'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<")     'mc/mark-all-like-this)
+(global-set-key (kbd "C-\"")        'mc/skip-to-next-like-this)
+(global-set-key (kbd "C-:")         'mc/skip-to-previous-like-this)
+
 ;; [[ Keybindings ]]
 
 ;; SHIFT + <arrow key> to move to window
@@ -259,7 +270,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
