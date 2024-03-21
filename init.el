@@ -1,3 +1,5 @@
+(push "~/.config/emacs/vm" load-path)
+
 (require 'package)
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
@@ -51,6 +53,9 @@
 (add-hook 'after-make-frame-functions 'vm-remove-fringe-hook)
 
 (tool-bar-mode -1)
+
+(if (not (display-graphic-p))
+    (menu-bar-mode -1))
 
 ;; Saves window layouts. To return to previous window layout,
 ;; do C-c LEFT_ARROW.
