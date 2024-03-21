@@ -55,7 +55,9 @@
 (tool-bar-mode -1)
 
 (if (not (display-graphic-p))
-    (menu-bar-mode -1))
+    (progn
+      (menu-bar-mode -1)
+      (xterm-mouse-mode 1)))
 
 ;; Saves window layouts. To return to previous window layout,
 ;; do C-c LEFT_ARROW.
