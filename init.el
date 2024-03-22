@@ -66,16 +66,39 @@
 (global-hl-line-mode 1)
 (setq global-hl-line-sticky-flag t)
 
-;;; [[ Multiple cursors ]]
+;;; [[ Movement ]]
 
 (require 'multiple-cursors)
-
 (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
 (global-set-key (kbd "C->")         'mc/mark-next-like-this)
 (global-set-key (kbd "C-<")         'mc/mark-previous-like-this)
 (global-set-key (kbd "C-c C-<")     'mc/mark-all-like-this)
-(global-set-key (kbd "C-\"")        'mc/skip-to-next-like-this)
-(global-set-key (kbd "C-:")         'mc/skip-to-previous-like-this)
+; (global-set-key (kbd "C-\"")        'mc/skip-to-next-like-this)
+; (global-set-key (kbd "C-:")         'mc/skip-to-previous-like-this)
+
+;; For move-text to re-indent line when moved.
+;; From @jbreeden on the move-text Github README.
+(defun indent-region-advice (&rest ignored)
+  (let ((deactivate deactivate-mark))
+    (if (region-active-p)
+        (indent-region (region-beginning) (region-end))
+      (indent-region (line-beginning-position) (line-end-position)))
+    (setq deactivate-mark deactivate)))
+
+;; M-up / M-down to move the current line up / down.
+(use-package move-text
+  :ensure t
+  :config
+  (progn
+    (move-text-default-bindings)
+    (advice-add 'move-text-up :after 'indent-region-advice)
+    (advice-add 'move-text-down :after 'indent-region-advice)))
+
+(use-package avy
+  :ensure t
+  :config
+  (global-set-key (kbd "C-:") 'avy-goto-char-timer))
+  
 
 ;; [[ Keybindings ]]
 
@@ -190,25 +213,6 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ Mode line ]]
 
-(defun vm-update-mode-line-style ()
-  "Updates styling to mode-line and mode-line-inactive."
-  (set-face-attribute 'mode-line nil
-                      :background "gray20"
-                      :foreground "gray60"
-                      :box '(:line-width 4 :color "gray20" :style nil))
-  (set-face-attribute 'mode-line-inactive nil
-                      :background "gray40"
-                      :foreground "gray80"
-                      :box '(:line-width 4 :color "gray40" :style nil)))
-
-(vm-update-mode-line-style)
-(defvar after-load-theme-hook nil
-  "Hook run after a color theme is loaded using `load-theme'.")
-(defadvice load-theme (after run-after-load-theme-hook activate)
-  "Run `after-load-theme-hook'."
-  (run-hooks 'after-load-theme-hook))
-(add-hook 'after-load-theme-hook 'vm-update-mode-line-style)
-
 (defface vm-mode-line-normal-face
   '((t))
   "Used for normal text."
@@ -272,7 +276,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
