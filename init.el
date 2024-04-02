@@ -208,6 +208,19 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
                  (switch-to-buffer "*compilation*"))))))))
 (add-hook 'compilation-mode-hook 'vm-compilation-buffer-location-hook)
 
+(defun tm42-switch-to-compilation-buffer-on-failure (buffer msg)
+  "Switch to the compilation buffer if the compilation fails."
+  ; This is admittedly not the best heuristic to detect compilation
+  ; failure.
+  (unless (string-match "finished" msg)
+    (progn
+      (switch-to-buffer-other-window buffer)
+      (goto-char (point-min))
+      (compilation-next-error 1))))
+
+(add-hook 'compilation-finish-functions
+          'tm42-switch-to-compilation-buffer-on-failure)
+
 ;; [[ Grep ]]
 
 (defun vm-grep-buffer-location-hook ()
