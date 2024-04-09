@@ -260,21 +260,24 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   '((t))
   "Used for normal text."
   :group 'vm-mode-line-group)
-
+(defface vm-mode-line-bold-face
+  '((t
+     :inherit 'vm-mode-line-normal-face
+     :weight bold))
+  "Just a bold face."
+  :group 'vm-mode-line-group)
 (defface vm-mode-line-past-fill-column-face
   '((t
      :inherit 'vm-mode-line-normal-face
      :foreground "#ff4500"))
   "Changes the color of the column number when it exceeds the specified fill-column."
   :group 'vm-mode-line-group)
-
 (defface vm-mode-line-saved-face
   '((t
      :inherit vm-mode-line-normal-face
      :foreground "#50C878"))
   "Color to indicate the working window is showing a saved buffer."
   :group 'vm-mode-line-group)
-
 (defface vm-mode-line-unsaved-face
   '((t
      :inherit vm-mode-line-normal-face
@@ -282,30 +285,54 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   "Color to indicate the working window is showing an unsaved buffer."
   :group 'vm-mode-line-group)
 
-(setq-default mode-line-format
-	      '((:propertize " "
-                             face vm-mode-line-normal-face)
-                (:eval
-		 (propertize "|||"
-			     'face
-			     (if (buffer-modified-p)
-				 'vm-mode-line-unsaved-face
-			       'vm-mode-line-saved-face)))
-                (:propertize " "
-                             face vm-mode-line-normal-face)
-		(:propertize "%4l:"
-			     face vm-mode-line-normal-face)
-		(:eval
-		 (propertize "%3c"
-			     'face
-			     (if (>= (current-column) fill-column)
-				 'vm-mode-line-past-fill-column-face
-			       'vm-mode-line-normal-face)))
-		(:propertize " -- "
-			     face vm-mode-line-normal-face)
-		(:propertize "%b" face vm-mode-line-normal-face)
-		)
-	      )
+(defun vm-mode-line ()
+  (interactive)
+  (setq-default mode-line-format
+	        '((:propertize " "
+                               face vm-mode-line-normal-face)
+                  (:eval
+                   (if (buffer-modified-p)
+                       (propertize "\\/"
+                                   'face
+                                   'vm-mode-line-unsaved-face)
+                     (propertize "/\\"
+                                 'face
+                                 'vm-mode-line-saved-face)))
+                  (:propertize " "
+                               face vm-mode-line-normal-face)
+		  (:propertize "%4l:"
+			       face vm-mode-line-normal-face)
+		  (:eval
+		   (propertize "%3c"
+			       'face
+			       (if (>= (current-column) fill-column)
+				   'vm-mode-line-past-fill-column-face
+			         'vm-mode-line-normal-face)))
+		  (:propertize "    "
+			       face vm-mode-line-normal-face)
+		  (:propertize "%b" face vm-mode-line-bold-face)
+		  )
+	        ))
+
+(defun vm-default-mode-line ()
+  (interactive)
+  (setq-default mode-line-format
+                '("%e" mode-line-front-space
+                  (:propertize
+                   ("" mode-line-mule-info mode-line-client mode-line-modified mode-line-remote)
+                   display
+                   (min-width (5.0)))
+                  mode-line-frame-identification
+                  mode-line-buffer-identification
+                  "   "
+                  mode-line-position
+                  (vc-mode vc-mode)
+                  "  "
+                  mode-line-modes
+                  mode-line-misc-info
+                  mode-line-end-spaces)))
+
+(vm-mode-line)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
