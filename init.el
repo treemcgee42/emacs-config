@@ -52,9 +52,16 @@
 ;; with the background.
 (set-face-attribute 'fringe nil :background nil)
 (defun vm-remove-fringe-hook (frame)
+  ;; Removes the fringe for a single frame
   (select-frame frame)
-  (set-face-attribute 'fringe nil :background nil))
+  (set-face-attribute 'fringe nil :background 'unspecified))
+(defun vm-remove-fringe-hook-all-frames (&rest args)
+  ;; Removes the fringe for all frames.
+  (dolist (frame (frame-list))
+    (vm-remove-fringe-hook frame)))
 (add-hook 'after-make-frame-functions 'vm-remove-fringe-hook)
+(advice-add 'load-theme
+            :after #'vm-remove-fringe-hook-all-frames)
 
 (tool-bar-mode -1)
 
