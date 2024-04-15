@@ -118,6 +118,31 @@
 
 ;; [[ Common util functions ]]
 
+(defun tm42-insert-into-list (l obj n)
+  "Insert into list LIST an element EL at index N.
+
+If N is 0, EL is inserted before the first element.
+
+The resulting list is returned.  As the list contents is mutated
+in-place, the old list reference does not remain valid.
+
+https://stackoverflow.com/questions/20821295/how-can-i-insert-into-the-middle-of-a-list-in-elisp"
+  (let* ((padded-list (cons nil l))
+         (c (nthcdr n padded-list)))
+    (setcdr c (cons obj (cdr c)))
+    (cdr padded-list)))
+
+(defun tm42-cyclic-nth (n &optional index lst)
+  "Like nth, but cycles around when reaching the end of the list,
+and negative n goes backwards."
+  (unless index (setq index 0))
+  (when lst
+    (let* ((len (length lst))
+           (new-index (mod (+ index n) len)))
+      (if (< new-index 0)
+          (nth (+ new-index len) lst)
+        (nth new-index lst)))))
+
 (defun vm-kill-other-non-file-buffers ()
   "Close all other file buffers except the current one (e.g.
  preserve compilation, Messages buffers."
@@ -254,6 +279,127 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
              (switch-to-buffer "*grep*"))))))
 (add-hook 'grep-mode-hook 'vm-grep-buffer-location-hook)
 
+;; [[ Buffer groups ]]
+
+(defvar tm42-buffer-groups nil
+  "List of buffer groups, each group is a list of buffer names.")
+
+(defun tm42-organize-buffers ()
+  "Organize buffers into user-defined groups."
+  (interactive)
+  (let ((buf (get-buffer-create "*tm42-organize-buffers*")))
+    (with-current-buffer buf
+    (erase-buffer)
+    (insert "---")
+    (insert "\n\n")
+    (if tm42-buffer-groups
+        (dolist (group tm42-buffer-groups)
+          (dolist (buffer group)
+            (insert buffer "\n"))
+          (insert "\n"))
+      (dolist (buffer buffer-list)
+        (insert buffer-name buffer) "\n"))
+    (insert "\n")
+    (insert "---")
+    (fundamental-mode)
+    (switch-to-buffer buf))))
+
+(defun tm42-organize-buffers-update ()
+  "Parse the *tm42-organize-buffers* buffer to update tm42-buffer-groups."
+  (interactive)
+  (let ((groups '())
+        (current-group '())
+        (started nil))
+    (with-current-buffer "*tm42-organize-buffers*"
+      (goto-char (point-min))
+
+      (while (and (not started) (not (eobp)))
+        (setq started (looking-at "---"))
+        (forward-line 1))
+      
+      (while (and (not (eobp)) (not (looking-at "---")))
+        (let ((line (buffer-substring-no-properties (line-beginning-position)
+                                                    (line-end-position))))          
+          (if (string-match-p "^[[:space:]]*$" line)
+              (when current-group
+                (setq groups (append groups (list current-group))
+                      current-group '()))
+            (setq current-group (append current-group (list line))))
+        (forward-line 1))
+      (setq tm42-buffer-groups groups))))
+  tm42-buffer-groups)
+
+(defun tm42-forward-buffer (n)
+  "Swtch forward n buffers in the current group. Negative n means backwards."  
+  (cl-loop for group in tm42-buffer-groups
+           for index = (cl-position (buffer-name) group :test 'string=)
+           when index
+           return (switch-to-buffer (tm42-cyclic-nth n index group))))
+
+(defun tm42-next-buffer ()
+  (interactive)
+  (tm42-forward-buffer 1))
+
+(defun tm42-previous-buffer-name ()
+  (interactive)
+  (tm42-forward-buffer -1))
+
+;; Stuff to get this to integrate well with the rest of the system.
+
+(defun tm42-init-buffer-groups ()
+  "Initialize the buffer groups with all existing buffers in one group."
+  (setq tm42-buffer-groups (list (mapcar 'buffer-name (buffer-list)))))
+
+(defvar tm42-last-buffer nil
+  "The last buffer switched from. Used to determine which group new buffers
+should be added to.")
+
+(defun tm42-add-buffer-to-prev-buffer-group (buf-name)
+  "Adds the buffer to the group of the last active buffer.
+It will be added directly after the that buffer in the group ordering."
+  (let ((new-buffer-group nil)
+        (new-buffer-group-idx 0))
+    (cl-loop for group-index from 0
+             for group in tm42-buffer-groups
+             for buff-index = (cl-position tm42-previous-buffer-name group :test 'string=)
+             when buff-index
+             return (progn
+                      (setq new-buffer-group-index (+ buff-index 1))
+                      (setq new-buffer-group
+                            (tm42-insert-into-list group
+                                                   buf-name
+                                                   new-buffer-group-index))))
+    (if (not new-buffer-group)
+        (error "Could not find previous buffer in existing buffer groups")
+      (setf (nth new-buffer-group-idx
+                 tm42-buffer-groups)
+            new-buffer-group))))
+
+(defun tm42-buffer-list-update ()
+  "Hook to add new buffers to the group of the last buffer."
+  (let ((new-buffer (buffer-name (current-buffer))))
+    (cl-loop for group-index from 0
+             for group in tm42-buffer-groups
+             for buff-index = (cl-position tm42-previous-buffer-name group :test 'string=)
+             when buff-index
+             return (tm42-add-buffer-to-prev-buffer-group new-buffer))))
+;; (add-hook 'buffer-list-update-hook 'tm42-buffer-list-update)
+
+(defun tm42-store-last-buffer()
+  "Hook to store the current buffer as the last buffer when switching buffers."
+  (setq tm42-previous-buffer-name (buffer-name (current-buffer))))
+;; (add-hook 'window-configuration-change-hook 'tm42-store-last-buffer)
+
+(defvar tm42-buffer-group-keybindings-enabled nil)
+(defun tm42-toggle-buffer-group-keybindings ()
+  (if tm42-buffer-group-keybindings-enabled
+      (progn
+        (global-set-key (kbd "C-x <right>") 'next-buffer)
+        (global-set-key (kbd "C-x <left>") 'previous-buffer))
+    (progn
+      (global-set-key (kbd "C-x <right>") 'tm42-next-buffer)
+      (global-set-key (kbd "C-x <left>") 'tm42-previous-buffer))))
+    
 ;; [[ Mode line ]]
 
 (defface vm-mode-line-normal-face
