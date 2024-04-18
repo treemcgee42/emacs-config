@@ -281,34 +281,115 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ Buffer groups ]]
 
-(defvar tm42-buffer-groups nil
-  "List of buffer groups, each group is a list of buffer names.")
+;; Debug
+
+(defcustom tm42-buffer-groups-debug nil
+  "Enable debug messages for the package."
+  :type 'boolean
+  :group 'tm42-buffer-groups)
+
+(defun tm42-buffer-groups-debug-message (format-string &rest args)
+  "Print debug message if debugging is enabled."
+  (when tm42-buffer-groups-debug
+    (apply 'message (concat "[tm42-buffer-groups] " format-string) args)))
+
+;; State
+
+(defvar tm42-group-to-buffers-map (make-hash-table :test 'equal)
+  "Hash table whose keys are buffer group names and values are lists
+of buffers belonging to a buffer group.")
+(defun tm42-group-to-buffers-map-init ()
+  (clrhash tm42-group-to-buffers-map)
+  (puthash "Other" (mapcar 'buffer-name (buffer-list)) tm42-group-to-buffers-map)
+  tm42-group-to-buffers-map)
+
+(defvar tm42-buffer-to-group-map (make-hash-table :test 'equal)
+  "Hash table whose keys are buffer names and whose values are the group
+that buffer belongs to.")
+(defun tm42-buffer-to-group-map-init ()
+  (clrhash tm42-buffer-to-group-map)
+  (mapcar '(lambda (buf)
+             (puthash (buffer-name buf) "Other" tm42-buffer-to-group-map))
+          (buffer-list))
+  tm42-buffer-to-group-map)
+
+(defun tm42-get-group-for-buffer (buf-name)
+  (gethash buf-name tm42-buffer-to-group-map))
+(defun tm42-get-buffers-in-group (group-name)
+  (gethash group-name tm42-group-to-buffers-map))
+
+(defun tm42-init-buffer-groups ()
+  (tm42-group-to-buffers-map-init)
+  (tm42-buffer-to-group-map-init))
+(defun tm42-clear-buffer-groups ()
+  (clrhash tm42-group-to-buffers-map)
+  (clrhash tm42-buffer-to-group-map))
+(defun tm42-set-buffer-group (group-name group-bufs)
+  "Assign a group of buffers, group-bufs, to the group group-name.
+This overrides any existing assignments to and from this group."
+  (let ((prev-group-bufs (gethash group-name tm42-group-to-buffers-map '())))
+    (dolist (prev-grouped-buf prev-group-bufs)
+      (remhash prev-grouped-buf tm42-buffer-to-group-map))
+    (puthash group-name group-bufs tm42-group-to-buffers-map)
+    (mapcar #'(lambda (group-buf)
+                (puthash group-buf group-name tm42-buffer-to-group-map))
+            group-bufs)))
+(defun tm42-assign-buffer-to-group (group-name buf-name)
+  "Does not check if buffer is already in group."
+  (let ((prev-group-bufs (gethash group-name tm42-group-to-buffers-map '())))
+    (puthash group-name
+             (append prev-group-bufs (list buf-name))
+             tm42-group-to-buffers-map)
+    (puthash buf-name group-name tm42-buffer-to-group-map)))
+(defun tm42-remove-buffer-from-buffer-groups (buf-name)
+  (let* ((buf-group (tm42-get-group-for-buffer buf-name))
+         (group-bufs (tm42-get-buffers-in-group buf-group)))
+    (remhash buf-name tm42-buffer-to-group-map)
+    (puthash buf-group
+             (remove buf-name group-bufs)
+             tm42-group-to-buffers-map)))
+    
+
+(tm42-init-buffer-groups)
+
+;; Functionality
+
+(defun tm42-refresh-buffer-groups ()
+  (let ((buf-list (mapcar 'buffer-name (buffer-list)))
+        (other-bufs (gethash "Other" tm42-group-to-buffers-map '())))
+    (maphash #'(lambda (grouped-buf buf-group)
+                (setq buf-list (remove grouped-buf buf-list)))
+             tm42-buffer-to-group-map)
+    (puthash "Other" (append other-bufs buf-list) tm42-group-to-buffers-map)
+    (mapcar #'(lambda (buf)
+               (puthash buf "Other" tm42-buffer-to-group-map))
+            buf-list)))
 
 (defun tm42-organize-buffers ()
   "Organize buffers into user-defined groups."
   (interactive)
   (let ((buf (get-buffer-create "*tm42-organize-buffers*")))
+    (tm42-refresh-buffer-groups)
     (with-current-buffer buf
-    (erase-buffer)
-    (insert "---")
-    (insert "\n\n")
-    (if tm42-buffer-groups
-        (dolist (group tm42-buffer-groups)
-          (dolist (buffer group)
-            (insert buffer "\n"))
-          (insert "\n"))
-      (dolist (buffer buffer-list)
-        (insert buffer-name buffer) "\n"))
-    (insert "\n")
-    (insert "---")
-    (fundamental-mode)
-    (switch-to-buffer buf))))
+      (erase-buffer)
+      (insert "---")
+      (insert "\n")
+      (maphash #'(lambda (group-name grouped-bufs)
+                   (insert "\nGROUP: " group-name "\n")
+                   (dolist (grouped-buf grouped-bufs)
+                     (insert grouped-buf "\n")))
+               tm42-group-to-buffers-map)
+      (insert "\n\n")
+      (insert "---")
+      (fundamental-mode)
+      (switch-to-buffer buf))))
 
 (defun tm42-organize-buffers-update ()
   "Parse the *tm42-organize-buffers* buffer to update tm42-buffer-groups."
   (interactive)
   (let ((groups '())
-        (current-group '())
+        (current-group nil)
+        (current-group-bufs '())
         (started nil))
     (with-current-buffer "*tm42-organize-buffers*"
       (goto-char (point-min))
@@ -322,76 +403,55 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
                                                     (line-end-position))))          
           (if (string-match-p "^[[:space:]]*$" line)
               (when current-group
-                (setq groups (append groups (list current-group))
-                      current-group '()))
-            (setq current-group (append current-group (list line))))
-        (forward-line 1))
-      (setq tm42-buffer-groups groups))))
-  tm42-buffer-groups)
+                (tm42-set-buffer-group current-group current-group-bufs)
+                (setq current-group nil)
+                (setq current-group-bufs '()))
+            (if (string-prefix-p "GROUP: " line)
+                (setq current-group (substring line 7 nil))
+              (setq current-group-bufs (append current-group-bufs (list line)))))
+        (forward-line 1))))))
 
 (defun tm42-forward-buffer (n)
-  "Swtch forward n buffers in the current group. Negative n means backwards."  
-  (cl-loop for group in tm42-buffer-groups
-           for index = (cl-position (buffer-name) group :test 'string=)
-           when index
-           return (switch-to-buffer (tm42-cyclic-nth n index group))))
+  "Switch forward n buffers in the current group. Negative n means backwards."
+  (let* ((group-name (gethash (buffer-name) tm42-buffer-to-group-map))
+         (buffers-in-group (gethash group-name tm42-group-to-buffers-map))
+         (current-buf-idx (cl-position (buffer-name) buffers-in-group :test 'string=)))
+    (switch-to-buffer (tm42-cyclic-nth n current-buf-idx buffers-in-group))))
 
 (defun tm42-next-buffer ()
   (interactive)
   (tm42-forward-buffer 1))
 
-(defun tm42-previous-buffer-name ()
+(defun tm42-previous-buffer ()
   (interactive)
   (tm42-forward-buffer -1))
 
-;; Stuff to get this to integrate well with the rest of the system.
+;; Automatic buffer group assignment
 
-(defun tm42-init-buffer-groups ()
-  "Initialize the buffer groups with all existing buffers in one group."
-  (setq tm42-buffer-groups (list (mapcar 'buffer-name (buffer-list)))))
+(defvar tm42-curr-buffer-group "Other")
 
-(defvar tm42-last-buffer nil
-  "The last buffer switched from. Used to determine which group new buffers
-should be added to.")
+(defun tm42-new-buffer-hook (frame)
+  (when (not (active-minibuffer-window))
+    (let* ((win (frame-selected-window frame))
+           (new-buf-name (buffer-name (window-buffer win)))
+           (prev-buf-name (buffer-name (car (car (window-prev-buffers win)))))
+           (prev-buf-group (tm42-get-group-for-buffer prev-buf-name)))
+      (when (not (gethash new-buf-name tm42-buffer-to-group-map))
+        (tm42-buffer-groups-debug-message
+         "adding buffer %s to group %s of prev buffer %s"
+         new-buf-name prev-buf-group prev-buf-name)
+        (tm42-assign-buffer-to-group prev-buf-group new-buf-name)))))
+(add-hook 'window-buffer-change-functions #'tm42-new-buffer-hook)
 
-(defun tm42-add-buffer-to-prev-buffer-group (buf-name)
-  "Adds the buffer to the group of the last active buffer.
-It will be added directly after the that buffer in the group ordering."
-  (let ((new-buffer-group nil)
-        (new-buffer-group-idx 0))
-    (cl-loop for group-index from 0
-             for group in tm42-buffer-groups
-             for buff-index = (cl-position tm42-previous-buffer-name group :test 'string=)
-             when buff-index
-             return (progn
-                      (setq new-buffer-group-index (+ buff-index 1))
-                      (setq new-buffer-group
-                            (tm42-insert-into-list group
-                                                   buf-name
-                                                   new-buffer-group-index))))
-    (if (not new-buffer-group)
-        (error "Could not find previous buffer in existing buffer groups")
-      (setf (nth new-buffer-group-idx
-                 tm42-buffer-groups)
-            new-buffer-group))))
+(defun tm42-kill-buffer-hook ()
+  (tm42-remove-buffer-from-buffer-groups (buffer-name)))
+(add-hook 'kill-buffer-hook #'tm42-kill-buffer-hook)
 
-(defun tm42-buffer-list-update ()
-  "Hook to add new buffers to the group of the last buffer."
-  (let ((new-buffer (buffer-name (current-buffer))))
-    (cl-loop for group-index from 0
-             for group in tm42-buffer-groups
-             for buff-index = (cl-position tm42-previous-buffer-name group :test 'string=)
-             when buff-index
-             return (tm42-add-buffer-to-prev-buffer-group new-buffer))))
-;; (add-hook 'buffer-list-update-hook 'tm42-buffer-list-update)
-
-(defun tm42-store-last-buffer()
-  "Hook to store the current buffer as the last buffer when switching buffers."
-  (setq tm42-previous-buffer-name (buffer-name (current-buffer))))
-;; (add-hook 'window-configuration-change-hook 'tm42-store-last-buffer)
+;; Config
 
 (defvar tm42-buffer-group-keybindings-enabled nil)
 (defun tm42-toggle-buffer-group-keybindings ()
+  (interactive)
   (if tm42-buffer-group-keybindings-enabled
       (progn
         (global-set-key (kbd "C-x <right>") 'next-buffer)
