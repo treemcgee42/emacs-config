@@ -249,10 +249,11 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   ; This is admittedly not the best heuristic to detect compilation
   ; failure.
   (unless (string-match "finished" msg)
-    (progn
-      (switch-to-buffer-other-window buffer)
-      (goto-char (point-min))
-      (compilation-next-error 1))))
+    (let ((buffer-win (get-buffer-window buffer t)))
+      (when buffer-win
+        (select-window buffer-win)
+        (goto-char (point-min))
+        (compilation-next-error 1)))))
 
 (add-hook 'compilation-finish-functions
           'tm42-switch-to-compilation-buffer-on-failure)
