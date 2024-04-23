@@ -109,7 +109,18 @@
   :ensure t
   :config
   (global-set-key (kbd "C-:") 'avy-goto-char-timer))
-  
+
+(defun tm42-smart-beginning-of-line ()
+  "Move point to first beginning of line or non-whitespace character.
+If the point is already at the beginning of the line, move to the
+first non-whitespace character. Otherwise just move to the beginning
+of the line."
+  (interactive)
+  (let ((original-point (point)))
+    (move-beginning-of-line 1)
+    (when (= original-point (point))
+      (back-to-indentation))))
+(global-set-key (kbd "C-a") 'tm42-smart-beginning-of-line)
 
 ;; [[ Keybindings ]]
 
