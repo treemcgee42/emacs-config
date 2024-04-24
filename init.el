@@ -71,10 +71,6 @@
       (menu-bar-mode -1)
       (xterm-mouse-mode 1)))
 
-;; Saves window layouts. To return to previous window layout,
-;; do C-c LEFT_ARROW.
-(winner-mode 1)
-
 (global-hl-line-mode 1)
 (setq global-hl-line-sticky-flag t)
 
