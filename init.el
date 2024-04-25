@@ -17,7 +17,8 @@
   (marginalia-mode))
 
 (use-package consult
-  :bind (("C-x b" . consult-buffer)))
+  :bind (("C-x b" . consult-buffer)
+         ("M-g i" . consult-imenu)))
 
 (use-package orderless
   :ensure t
