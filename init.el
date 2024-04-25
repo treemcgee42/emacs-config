@@ -298,65 +298,77 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ Mode line ]]
 
-(defface vm-mode-line-normal-face
+(defface tm42/ml/normal-face
   '((t))
   "Used for normal text."
-  :group 'vm-mode-line-group)
-(defface vm-mode-line-bold-face
+  :group 'tm42/ml/group)
+(defface tm42/ml/bold-face
   '((t
-     :inherit 'vm-mode-line-normal-face
+     :inherit 'tm42/ml/normal-face
      :weight bold))
   "Just a bold face."
-  :group 'vm-mode-line-group)
-(defface vm-mode-line-past-fill-column-face
+  :group 'tm42/ml/group)
+(defface tm42/ml/past-fill-column-face
   '((t
-     :inherit 'vm-mode-line-normal-face
+     :inherit 'tm42/ml/normal-face
      :foreground "#ff4500"))
   "Changes the color of the column number when it exceeds the specified fill-column."
-  :group 'vm-mode-line-group)
-(defface vm-mode-line-saved-face
+  :group 'tm42/ml/group)
+(defface tm42/ml/saved-face
   '((t
-     :inherit vm-mode-line-normal-face
+     :inherit tm42/ml/normal-face
      :foreground "#50C878"))
   "Color to indicate the working window is showing a saved buffer."
-  :group 'vm-mode-line-group)
-(defface vm-mode-line-unsaved-face
+  :group 'tm42/ml/group)
+(defface tm42/ml/unsaved-face
   '((t
-     :inherit vm-mode-line-normal-face
+     :inherit tm42/ml/normal-face
      :foreground "#ff4500"))
   "Color to indicate the working window is showing an unsaved buffer."
-  :group 'vm-mode-line-group)
+  :group 'tm42/ml/group)
 
-(defun vm-mode-line ()
+(setq tm42/ml/right-aligned-content
+      '(""
+        mode-line-misc-info))
+
+(defun tm42/ml/padding-before-right-aligned-content ()
+  (let ((r-length (length (format-mode-line tm42/ml/right-aligned-content))))
+    (propertize " "
+                'display
+                `(space :align-to (- right ,r-length)))))
+
+(defun tm42/ml/mode-line ()
   (interactive)
   (setq-default mode-line-format
 	        '((:propertize " "
-                               face vm-mode-line-normal-face)
+                               face tm42/ml/normal-face)
                   (:eval
                    (if (buffer-modified-p)
-                       (propertize "\\/"
+                       (propertize "%p"
                                    'face
-                                   'vm-mode-line-unsaved-face)
-                     (propertize "/\\"
+                                   'tm42/ml/unsaved-face)
+                     (propertize "%p"
                                  'face
-                                 'vm-mode-line-saved-face)))
+                                 'tm42/ml/saved-face)))
                   (:propertize " "
-                               face vm-mode-line-normal-face)
+                               face tm42/ml/normal-face)
 		  (:propertize "%4l:"
-			       face vm-mode-line-normal-face)
+			       face tm42/ml/normal-face)
 		  (:eval
 		   (propertize "%3c"
 			       'face
 			       (if (>= (current-column) fill-column)
-				   'vm-mode-line-past-fill-column-face
-			         'vm-mode-line-normal-face)))
+				   'tm42/ml/past-fill-column-face
+			         'tm42/ml/normal-face)))
 		  (:propertize "    "
-			       face vm-mode-line-normal-face)
-		  (:propertize "%b" face vm-mode-line-bold-face)
+			       face tm42/ml/normal-face)
+		  (:propertize "%b" face tm42/ml/bold-face)
+                  (:eval (tm42/ml/padding-before-right-aligned-content))
+                  (:eval tm42/ml/right-aligned-content)
 		  )
 	        ))
 
-(defun vm-default-mode-line ()
+(defun tm42/ml/default-mode-line ()
   (interactive)
   (setq-default mode-line-format
                 '("%e" mode-line-front-space
@@ -374,7 +386,8 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
                   mode-line-misc-info
                   mode-line-end-spaces)))
 
-(vm-mode-line)
+(which-function-mode)
+(tm42/ml/mode-line)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
