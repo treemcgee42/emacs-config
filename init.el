@@ -242,15 +242,12 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
              (not (get-buffer-window "*compilation*")))
     (save-selected-window
       (save-excursion
-        (cond ((eq (length (window-list)) 1)
-               (let ((w (split-window-horizontally)))
-                 (select-window w)
-                 (switch-to-buffer "*compilation*")))
-              (t
-               (other-window 1)
-               (let ((w (split-window-vertically)))
-                 (select-window w)
-                 (switch-to-buffer "*compilation*"))))))))
+        (let* ((w (split-window-vertically))
+               (h (window-height w))
+               (compilation-window-height 10))
+          (select-window w)
+          (switch-to-buffer "*compilation*")
+          (shrink-window (- h compilation-window-height)))))))
 (add-hook 'compilation-mode-hook 'vm-compilation-buffer-location-hook)
 
 (defun tm42-switch-to-compilation-buffer-on-failure (buffer msg)
@@ -332,6 +329,8 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
       '(""
         mode-line-misc-info))
 
+;; From Tyler Grinn
+;; https://emacs.stackexchange.com/questions/5529/how-to-right-align-some-items-in-the-modeline
 (defun tm42/ml/padding-before-right-aligned-content ()
   (let ((r-length (length (format-mode-line tm42/ml/right-aligned-content))))
     (propertize " "
@@ -402,7 +401,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
