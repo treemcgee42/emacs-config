@@ -114,6 +114,9 @@
   (global-set-key (kbd "C-;") 'avy-goto-char-timer)
   (global-set-key (kbd "C-c ;") 'avy-goto-char-timer))
 
+(use-package ace-window
+  :config
+  (global-set-key (kbd "M-o") 'ace-window))
 (defun ace-window-prefix ()
   "Use `ace-window' to display the buffer of the next command.
 The next buffer is the buffer displayed by the next command invoked
@@ -252,20 +255,15 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 (setq compilation-scroll-output t)
 
 (defun vm-compilation-buffer-location-hook ()
-  "Determines where the compilation buffer should pop up.
-
-- If it's already visible, just use that.
-- If there is only one window in the current frame, split it
-  horizontally and use the newly created window.
-- If there is more than one window, go to previously selected
-  window, split it vertically, and use the newly created window."
+  "Determines where the compilation buffer should pop up."
   (message "Running compilation hook")
   ;; The first condition in the `and` checks if the buffer being
   ;; opened in compilation mode is exactly the usual compilation
   ;; buffer. This is necessary because, e.g., the grep buffer also
   ;; uses compilation mode.
   (when (and (string= "*compilation*" (buffer-name))
-             (not (get-buffer-window "*compilation*")))
+             (not (get-buffer-window "*compilation*"))
+             (not display-buffer-overriding-action))
     (save-selected-window
       (save-excursion
         (let* ((w (split-window-vertically))
@@ -427,7 +425,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
