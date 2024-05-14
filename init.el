@@ -18,7 +18,10 @@
 
 (use-package consult
   :bind (("C-x b" . consult-buffer)
-         ("M-g i" . consult-imenu)))
+         ("M-g i" . consult-imenu))
+  :custom
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref))
 
 (use-package orderless
   :ensure t
