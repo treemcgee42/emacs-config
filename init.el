@@ -31,7 +31,8 @@
 
 (use-package expand-region
   :ensure t
-  :bind (("C-=" . er/expand-region)))
+  :bind (("C-=" . er/expand-region)
+         ("C-\\" . er/expand-region)))
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -109,7 +110,8 @@
 (use-package avy
   :ensure t
   :config
-  (global-set-key (kbd "C-:") 'avy-goto-char-timer))
+  (global-set-key (kbd "C-;") 'avy-goto-char-timer)
+  (global-set-key (kbd "C-c ;") 'avy-goto-char-timer))
 
 (defun tm42-smart-beginning-of-line ()
   "Move point to first beginning of line or non-whitespace character.
