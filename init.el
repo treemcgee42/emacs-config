@@ -43,7 +43,10 @@
 
 ;; [[ Misc ]]
 
-(load-theme 'modus-vivendi)
+;; Themes don't look great in terminal emacs; better to use the same theme as the
+;; terminal emulator.
+(when (display-graphic-p)
+  (load-theme 'modus-vivendi))
 
 ;; Hide title bar
 ;; (add-to-list 'default-frame-alist '(undecorated . t))
