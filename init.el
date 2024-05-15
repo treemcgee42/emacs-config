@@ -149,6 +149,13 @@ of the line."
       (back-to-indentation))))
 (global-set-key (kbd "C-a") 'tm42-smart-beginning-of-line)
 
+;; From Karthinks emacs window management almanac
+(define-advice pop-global-mark (:around (pgm) use-display-buffer)
+  "Make `pop-to-buffer' jump buffers via `display-buffer'."
+  (cl-letf (((symbol-function 'switch-to-buffer)
+                         #'pop-to-buffer))
+                (funcall pgm)))
+
 ;; [[ Keybindings ]]
 
 ;; SHIFT + <arrow key> to move to window
