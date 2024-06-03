@@ -16,4 +16,4 @@ there:
 ```
 
 When you load up tmux, install plugins with `<LEADER> I`. Refresh when
-you're done, e.g. `<LEADER> r`.
+you're done, e.g. `<LEADER> R`.
