@@ -1,3 +1,9 @@
+(defmacro measure-time (msg &rest body)
+  "Measure the time it takes to evaluate BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (message "%s: %.06f"  ,msg (float-time (time-since time)))))
+
 (push "~/.config/emacs/vm" load-path)
 (push "~/.config/emacs/lisp" load-path)
 
@@ -5,8 +11,10 @@
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
 
-(use-package magit)
-(use-package winner)
+(setq use-package-compute-statistics t)
+
+(use-package magit
+  :defer t)
 
 (use-package vertico
   :init
@@ -419,6 +427,14 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 (which-function-mode)
 (tm42/ml/mode-line)
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer
+             0.5
+             nil
+             (lambda ()
+               (message "Emacs started in %s" (emacs-init-time))))))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
