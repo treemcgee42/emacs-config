@@ -42,14 +42,29 @@
   :bind (("C-=" . er/expand-region)
          ("C-\\" . er/expand-region)))
 
+;; Colors in compilation buffer.
+(use-package ansi-color
+    :hook (compilation-filter . ansi-color-compilation-filter))
+
+;; Clipboard access for terminal emacs / tmux. I didn't actually need this when
+;; using zellij...
+(unless (display-graphic-p)
+  (use-package clipetty
+    :ensure t
+    :hook (after-init . global-clipetty-mode)))
+
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
 
-(condition-case nil
-    (require 'vm-arista)
-  (file-error nil))
+(measure-time
+ "Loading vm-arista"
+ (condition-case nil
+     (require 'vm-arista)
+   (file-error nil)))
 
 ;; [[ Misc ]]
+
+(setq inhibit-startup-screen t)
 
 ;; Themes don't look great in terminal emacs; better to use the same theme as the
 ;; terminal emulator.
