@@ -395,11 +395,11 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ Buffer groups ]]
 
-(use-package tm42-buffer-groups
-  :ensure nil
-  :demand
-  :bind (("C-x <left>" . tm42/bg/previous-buffer)
-         ("C-x <right>" . tm42/bg/next-buffer)))
+;; (use-package tm42-buffer-groups
+;;   :ensure nil
+;;   :demand
+;;   :bind (("C-x <left>" . tm42/bg/previous-buffer)
+;;          ("C-x <right>" . tm42/bg/next-buffer)))
 
 ;; [[ Mode line ]]
 
