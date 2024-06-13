@@ -511,12 +511,14 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  ;; If there is more than one, they won't work right.
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
+ '(custom-safe-themes
+   '("835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
  '(grep-command "rg -nS --no-heading \"\"")
  '(grep-command-position 22)
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
