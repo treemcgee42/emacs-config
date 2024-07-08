@@ -94,6 +94,10 @@
     :ensure t
     :hook (after-init . global-clipetty-mode)))
 
+(use-package indent-bars
+  :ensure (:host github :repo "jdtsmith/indent-bars"))
+(indent-bars-mode)
+
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
 
@@ -559,7 +563,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
