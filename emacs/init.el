@@ -47,25 +47,37 @@
 (add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
-(setq package-enable-at-startup nil)
-
 ;; Install use-package support
 (elpaca elpaca-use-package
   ;; Enable use-package :ensure support for Elpaca.
   (elpaca-use-package-mode))
 
+;; Magit requires a higher version of seq then installed on older emacs versions,
+;; this workaround is from https://github.com/progfolio/elpaca/issues/216
+(defun +elpaca-unload-seq (e)
+  (and (featurep 'seq) (unload-feature 'seq t))
+  (elpaca--continue-build e))
+(defun +elpaca-seq-build-steps ()
+  (append (butlast (if (file-exists-p (expand-file-name "seq" elpaca-builds-directory))
+                       elpaca--pre-built-steps elpaca-build-steps))
+          (list '+elpaca-unload-seq 'elpaca--activate-package)))
+(elpaca `(seq :build ,(+elpaca-seq-build-steps)))
 (use-package magit
-  :defer t)
+  :after seq
+  :ensure t)
 
 (use-package vertico
+  :ensure t
   :init
   (vertico-mode))
 
 (use-package marginalia
+  :ensure t
   :init
   (marginalia-mode))
 
 (use-package consult
+  :ensure t
   :bind (("C-x b" . consult-buffer)
          ("M-g i" . consult-imenu))
   :custom
@@ -85,7 +97,8 @@
 
 ;; Colors in compilation buffer.
 (use-package ansi-color
-    :hook (compilation-filter . ansi-color-compilation-filter))
+  :ensure nil ; included in emacs
+  :hook (compilation-filter . ansi-color-compilation-filter))
 
 ;; Clipboard access for terminal emacs / tmux. I didn't actually need this when
 ;; using zellij...
@@ -95,8 +108,8 @@
     :hook (after-init . global-clipetty-mode)))
 
 (use-package indent-bars
-  :ensure (:host github :repo "jdtsmith/indent-bars"))
-(indent-bars-mode)
+  :ensure (:host github :repo "jdtsmith/indent-bars")
+  :hook ((python-mode c-mode c++-mode tac-mode) . indent-bars-mode))
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -155,12 +168,6 @@
 (global-set-key (kbd "C-x ]") 'tab-bar-switch-to-next-tab)
 (global-set-key (kbd "C-x [") 'tab-bar-switch-to-prev-tab)
 
-(require 'multiple-cursors)
-(global-set-key (kbd "C->")         'mc/mark-next-like-this)
-(global-set-key (kbd "C-c .")       'mc/mark-next-like-this)
-(global-set-key (kbd "C-<")         'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c ,")       'mc/mark-previous-like-this)
-
 ;; For move-text to re-indent line when moved.
 ;; From @jbreeden on the move-text Github README.
 (defun indent-region-advice (&rest ignored)
@@ -186,8 +193,14 @@
   (global-set-key (kbd "C-c ;") 'avy-goto-char-timer))
 
 (use-package ace-window
+  :ensure t
   :config
   (global-set-key (kbd "M-o") 'ace-window))
+(add-hook
+ 'elpaca-after-init-hook
+ (lambda ()
+   (setq switch-to-buffer-obey-display-actions t)
+   (global-set-key (kbd "C-x 4 o") 'ace-window-prefix)))
 (defun ace-window-prefix ()
   "Use `ace-window' to display the buffer of the next command.
 The next buffer is the buffer displayed by the next command invoked
@@ -205,8 +218,6 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
        (cons window type)))
    nil "[ace-window]")
   (message "Use `ace-window' to display next command buffer..."))
-(setq switch-to-buffer-obey-display-actions t)
-(keymap-global-set "C-x 4 o" 'ace-window-prefix)
 
 (defun tm42-smart-beginning-of-line ()
   "Move point to first beginning of line or non-whitespace character.
@@ -308,25 +319,6 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
     (kill-new link)
     (message "Copied '%s' to the clipboard" link)))
 
-(use-package org-roam
-  :ensure t
-  :custom
-  (org-roam-directory (file-truename "/Users/vmalladi/org/roam"))
-  :bind (("C-c n l" . org-roam-buffer-toggle)
-         ("C-c n f" . org-roam-node-find)
-         ("C-c n g" . org-roam-graph)
-         ("C-c n i" . org-roam-node-insert)
-         ("C-c n c" . org-roam-capture)
-         ;; Dailies
-         ("C-c n j" . org-roam-dailies-capture-today))
-  :config
-  ;; If you're using a vertical completion framework, you might want a
-  ;; more informative completion interface
-  (setq org-roam-node-display-template
-        (concat "${title:*} "
-                (propertize "${tags:10}" 'face 'org-tag)))
-  (org-roam-db-autosync-mode))
-
 ;; [[ Compilation ]]
 
 ;; Make the compilation buffer scroll with output.
@@ -369,15 +361,18 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 ;; [[ Completion ]]
 
 (use-package corfu
+  :ensure t
   :init
   (global-corfu-mode))
 
 (unless (display-graphic-p)
   (use-package corfu-terminal
+    :ensure t
     :custom
     (corfu-terminal-mode 1)))
 
 (use-package cape
+  :ensure t
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
   :bind (("C-c p p" . completion-at-point) ;; capf
