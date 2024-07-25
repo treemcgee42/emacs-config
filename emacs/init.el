@@ -6,6 +6,7 @@
 
 (push "~/.config/emacs/vm" load-path)
 (push "~/.config/emacs/lisp" load-path)
+(push "~/.config/emacs/themes" load-path)
 
 ;; Install elpaca
 (defvar elpaca-installer-version 0.7)
@@ -105,11 +106,13 @@
 (unless (display-graphic-p)
   (use-package clipetty
     :ensure t
-    :hook (after-init . global-clipetty-mode)))
+    :hook (after-init . global-clipetty-mode)) ;; todo remove
+  (add-hook
+   'elpaca-after-init-hook
+   #'global-clipetty-mode))
 
-(use-package indent-bars
-  :ensure (:host github :repo "jdtsmith/indent-bars")
-  :hook ((python-mode c-mode c++-mode tac-mode) . indent-bars-mode))
+(use-package eat
+  :ensure t)
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -123,11 +126,9 @@
 ;; [[ Misc ]]
 
 (setq inhibit-startup-screen t)
-
-;; Themes don't look great in terminal emacs; better to use the same theme as the
-;; terminal emulator.
-(when (display-graphic-p)
-  (load-theme 'modus-vivendi))
+;; (load-theme 'modus-vivendi)
+(load-theme 'minimal-tron t)
+;; (disable-theme 'modus-vivendi)
 
 ;; Hide title bar
 ;; (add-to-list 'default-frame-alist '(undecorated . t))
@@ -552,13 +553,14 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
  '(custom-safe-themes
-   '("835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
+   '("4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
  '(grep-command "rg -nS --no-heading \"\"")
  '(grep-command-position 22)
  '(indent-tabs-mode nil)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+ '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
  '(tool-bar-mode nil))
 (custom-set-faces
@@ -567,3 +569,4 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "JetBrains Mono" :foundry "nil" :slant normal :weight regular :height 160 :width normal)))))
+(put 'erase-buffer 'disabled nil)
