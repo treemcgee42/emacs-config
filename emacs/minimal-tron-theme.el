@@ -4,7 +4,8 @@
 (let ((accent-1 "#FF7DBB")   ; pink
       (active-bg "#3D5666")  ; blue-grey
       (active-fg "#CBECFF")  ; brighter blue-grey
-      (default-1 "#8Fd4FF")) ; light blue
+      (default-1 "#8Fd4FF") ; light blue
+      (class '((class color) (min-colors 89))))
   (custom-theme-set-faces
    'minimal-tron
    '(default ((t (:family "default" :foundry "default" :width normal :height 1 :weight regular :slant normal :underline nil :overline nil :extend nil :strike-through nil :box nil :inverse-video nil :foreground "#B0CCDC" :background "#000000" :stipple nil :inherit nil))))
@@ -37,7 +38,17 @@
    `(font-lock-type-face ((t (:foreground "#387AAA"))))
    `(font-lock-variable-name-face ((t (:foreground "#B0CCDC"))))
    `(font-lock-warning-face ((t (:foreground ,accent-1 :background "#0E1926"))))
-   
+
+   ;; ORG
+   `(org-level-1 ((t (:foreground ,accent-1))))
+   `(org-level-2 ((t (:foreground ,accent-1))))
+   `(org-level-3 ((t (:foreground ,accent-1))))
+   `(org-level-4 ((t (:foreground ,accent-1))))
+   `(org-level-5 ((t (:foreground ,accent-1))))
+   `(org-level-6 ((t (:foreground ,accent-1))))
+   `(org-level-7 ((t (:foreground ,accent-1))))
+   `(org-level-8 ((t (:foreground ,accent-1))))
+
    `(button ((t (:inherit (link)))))
    `(link ((t (:underline (:color foreground-color :style line) :foreground "#BBF0EF"))))
    `(link-visited ((t (:foreground "violet" :inherit (link)))))
@@ -61,7 +72,7 @@
    `(which-func ((t (:inherit nil))))
    `(outline-1 ((t (:foreground "gray"))))
    `(outline-2 ((t (:foreground "gray"))))
-   `(outline-3 ((t (:foreground "gray"))))
+   `(outline-3 ((t (:foreground ,accent-1))))
    `(outline-4 ((t (:foreground "gray"))))
    `(outline-5 ((t (:foreground "gray"))))
    `(outline-6 ((t (:foreground "gray"))))
