@@ -181,6 +181,17 @@
 (global-set-key (kbd "C-x ]") 'tab-bar-switch-to-next-tab)
 (global-set-key (kbd "C-x [") 'tab-bar-switch-to-prev-tab)
 
+(global-set-key (kbd "M-n")
+                (lambda ()
+                  (interactive)
+                  (forward-line)
+                  (scroll-up-line)))
+(global-set-key (kbd "M-p")
+                (lambda ()
+                  (interactive)
+                  (previous-line)
+                  (scroll-down-line)))
+
 ;; For move-text to re-indent line when moved.
 ;; From @jbreeden on the move-text Github README.
 (defun indent-region-advice (&rest ignored)
