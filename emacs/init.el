@@ -53,6 +53,17 @@
   ;; Enable use-package :ensure support for Elpaca.
   (elpaca-use-package-mode))
 
+;; Have shells, shell commands, etc. use emacs itself as an editor for
+;; commands that need an editor (like git commit).
+(use-package with-editor
+  :ensure t
+  :commands (with-editor-export-editor with-editor-shell-command with-editor-async-shell-command)
+  :bind (([remap shell-command]       . with-editor-shell-command)
+         ([remap async-shell-command] . with-editor-async-shell-command))
+  :config (dolist (hook '(shell-mode-hook term-exec-hook eshell-mode-hook))
+            (dolist (envvar with-editor-envvars)
+              (add-hook hook (apply-partially 'with-editor-export-editor envvar)))))
+
 ;; Magit requires a higher version of seq then installed on older emacs versions,
 ;; this workaround is from https://github.com/progfolio/elpaca/issues/216
 (defun +elpaca-unload-seq (e)
@@ -121,7 +132,13 @@
   :config (progn
            (push (vector meta-prefix-char ?o) eat-semi-char-non-bound-keys)
            (eat-update-semi-char-mode-map)
-           (eat-reload)))
+           (eat-reload))
+  :config
+  ;; Ideally we would use :hook here, but for some reason it causes an infinite
+  ;; loop when loading eshell. This is a workaround.
+  (with-eval-after-load 'eshell
+    (eat-eshell-mode +1)
+    (eat-eshell-visual-command-mode +1)))
 
 (use-package rg
   :ensure t)
