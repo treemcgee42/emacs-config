@@ -195,6 +195,10 @@
 
 ;;; [[ Movement ]]
 
+(global-set-key (kbd "<f1>") 'previous-buffer)
+(global-set-key (kbd "<f2>") 'next-buffer)
+(global-set-key (kbd "<f3>") 'other-window)
+
 (global-set-key (kbd "C-x ]") 'tab-bar-switch-to-next-tab)
 (global-set-key (kbd "C-x [") 'tab-bar-switch-to-prev-tab)
 
