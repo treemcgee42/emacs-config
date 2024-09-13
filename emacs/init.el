@@ -369,6 +369,11 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 ;; Make the compilation buffer scroll with output.
 (setq compilation-scroll-output t)
 
+(defun tm42/set-compilation-scrollback (size)
+  (interactive "nScrollback size: ")
+  (add-hook 'compilation-filter-hook 'comint-truncate-buffer)
+  (setq comint-buffer-maximum-size size))
+
 (defun vm-compilation-buffer-location-hook ()
   "Determines where the compilation buffer should pop up."
   (message "Running compilation hook")
