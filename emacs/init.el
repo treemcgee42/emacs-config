@@ -193,6 +193,22 @@
 (global-hl-line-mode 1)
 (setq global-hl-line-sticky-flag t)
 
+;; Honestly the menu bar is still useful-- combine it with the tab-bar.
+(require 'tab-bar)
+(tab-bar-mode)
+(add-to-list 'tab-bar-format #'tab-bar-format-menu-bar)
+(setq tab-bar-menu-bar-button " π ")
+;; Clock
+(setenv "TZ" "America/New_York")
+(add-to-list 'tab-bar-format 'tab-bar-format-align-right 'append)
+(add-to-list 'tab-bar-format 'tab-bar-format-global 'append)
+(setq display-time-format "%a %e %b %T")
+(setq display-time-interval 1)
+(display-time-mode)
+
+(defun tab-bar-tab-name-format-comfortable (tab i) (propertize (concat " " (tab-bar-tab-name-format-default tab i) " ") 'face (funcall tab-bar-tab-face-function tab)))
+(setq tab-bar-tab-name-format-function #'tab-bar-tab-name-format-comfortable)
+
 ;;; [[ Movement ]]
 
 (global-set-key (kbd "<f1>") 'previous-buffer)
@@ -212,6 +228,10 @@
                   (interactive)
                   (previous-line)
                   (scroll-down-line)))
+
+(use-package tm42-maximize-window
+  :ensure nil
+  :bind (([mode-line mouse-3] . 'tm42/maximize-clicked-window)))
 
 ;; For move-text to re-indent line when moved.
 ;; From @jbreeden on the move-text Github README.
@@ -282,6 +302,20 @@ of the line."
   (cl-letf (((symbol-function 'switch-to-buffer)
                          #'pop-to-buffer))
                 (funcall pgm)))
+
+;; Use selection to search.
+;; https://blog.chmouel.com/posts/emacs-isearch/
+(defadvice isearch-mode (around isearch-mode-default-string (forward &optional regexp op-fun recursive-edit word-p) activate)
+  (if (and transient-mark-mode mark-active (not (eq (mark) (point))))
+      (progn
+        (isearch-update-ring (buffer-substring-no-properties (mark) (point)))
+        (deactivate-mark)
+        ad-do-it
+        (if (not forward)
+            (isearch-repeat-backward)
+          (goto-char (mark))
+          (isearch-repeat-forward)))
+    ad-do-it))
 
 ;; [[ Keybindings ]]
 
@@ -524,7 +558,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 (setq tm42/ml/right-aligned-content
       '(""
-        mode-line-misc-info))
+        which-func-format))
 
 ;; From Tyler Grinn
 ;; https://emacs.stackexchange.com/questions/5529/how-to-right-align-some-items-in-the-modeline
