@@ -60,9 +60,17 @@
    `(mode-line-emphasis ((t (:foreground "#B0CCDC"))))
    `(mode-line-highlight ((t (:weight normal :box nil :foreground ,default-1))))
    `(mode-line-inactive ((t (:weight normal :foreground "#90ACBC" :background "#1E1E1E"))))
+   ;;;; tab-bar-mode
    `(tab-bar ((t (:inherit mode-line-inactive))))
    `(tab-bar-tab-inactive ((t (:inherit mode-line-inactive))))
    `(tab-bar-tab ((t (:inherit mode-line))))
+   ;;;; tab-line-mode
+   `(tab-line ((t :inherit mode-line-inactive)))
+   `(tab-line-tab ((t (:inherit mode-line))))
+   `(tab-line-tab-current ((t (:inherit mode-line))))
+   `(tab-line-tab-inactive ((t (:inherit mode-line-inactive))))
+   `(tab-line-tab-modified ((t (:foreground ,accent-1))))
+   ;;;; ----
    `(isearch ((t (:weight normal :foreground "#FFFFFF" :background "#2B4255"))))
    `(isearch-fail ((((class color) (min-colors 88) (background light)) (:background "RosyBrown1")) (((class color) (min-colors 88) (background dark)) (:background "red4")) (((class color) (min-colors 16)) (:background "red")) (((class color) (min-colors 8)) (:background "red")) (((class color grayscale)) (:foreground "grey")) (t (:inverse-video t))))
    `(lazy-highlight ((t (:foreground "#BBCCDD" :background "#1B324B"))))
