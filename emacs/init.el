@@ -96,7 +96,9 @@
 (use-package consult
   :ensure t
   :bind (("C-x b" . consult-buffer)
-         ("M-g i" . consult-imenu))
+         ("C-x p b" . consult-project-buffer)
+         ("C-x p f" . consult-fd)
+         ("M-g i" . consult-imenu)))
   :custom
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref))
