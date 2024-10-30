@@ -427,18 +427,34 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ Org mode ]]
 
-(setq org-agenda-files '("~/org"))
+(with-eval-after-load 'org
+  (defun get-org-agenda-files ()
+    (let* ((project-umbrella-dir "~/dev/projects")
+           (project-dirs
+            (seq-filter #'file-directory-p
+                        (directory-files project-umbrella-dir t nil t)))
+           (top-level-project-org-files
+            (apply #'append
+                   (mapcar (lambda (dir)
+                             (directory-files dir t "\\.org$" t))
+                           project-dirs))))
+      (append '("~/dev/projects/todo.org") top-level-project-org-files)))
+  (setq org-agenda-files (get-org-agenda-files))
 
-(setq org-todo-keywords
-      '((sequence "TODO(t)" "STARTED(s!)"  "|" "DONE(d!)")))
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "STARTED(s!)"  "|" "DONE(d!)")))
 
-(defun vm-org-link-to-current-line ()
-  "Creates an Org mode link to the file open in the current
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file "~/dev/projects/todo.org")
+           "* TODO %?")))
+
+  (defun vm-org-link-to-current-line ()
+    "Creates an Org mode link to the file open in the current
  buffer, and the line pointed to by the cursor."
-  (interactive)
-  (let ((link (format "file:%s::%d" (buffer-file-name) (line-number-at-pos))))
-    (kill-new link)
-    (message "Copied '%s' to the clipboard" link)))
+    (interactive)
+    (let ((link (format "file:%s::%d" (buffer-file-name) (line-number-at-pos))))
+      (kill-new link)
+      (message "Copied '%s' to the clipboard" link))))
 
 ;; [[ Compilation ]]
 
@@ -683,6 +699,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(grep-command "rg -nS --no-heading \"\"")
  '(grep-command-position 22)
  '(indent-tabs-mode nil)
+ '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
  '(package-selected-packages
    '(eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
