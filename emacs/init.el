@@ -437,7 +437,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
     (let* ((project-umbrella-dir "~/dev/projects")
            (project-dirs
             (seq-filter #'file-directory-p
-                        (directory-files project-umbrella-dir t nil t)))
+                        (directory-files project-umbrella-dir t directory-files-no-dot-files-regexp t)))
            (top-level-project-org-files
             (apply #'append
                    (mapcar (lambda (dir)
