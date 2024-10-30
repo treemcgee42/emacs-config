@@ -267,6 +267,10 @@
 
 (repeat-mode 1)
 
+(require 'view)
+(global-set-key (kbd "C-v") 'View-scroll-half-page-forward)
+(global-set-key (kbd "M-v") 'View-scroll-half-page-backward)
+
 (use-package tm42-maximize-window
   :ensure nil
   :bind (([mode-line mouse-3] . 'tm42/maximize-clicked-window)))
