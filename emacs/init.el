@@ -245,6 +245,11 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
+(use-package which-key
+  :ensure nil)
+(with-eval-after-load 'which-key
+  (which-key-mode))
+
 ;;; [[ Movement ]]
 
 (global-set-key (kbd "<f1>") 'previous-buffer)
@@ -702,7 +707,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
  '(show-trailing-whitespace t)
