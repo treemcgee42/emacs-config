@@ -98,7 +98,7 @@
   :bind (("C-x b" . consult-buffer)
          ("C-x p b" . consult-project-buffer)
          ("C-x p f" . consult-fd)
-         ("M-g i" . consult-imenu)))
+         ("M-g i" . consult-imenu))
   :custom
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref))
@@ -248,7 +248,7 @@
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package which-key
-  :ensure nil)
+  :ensure t)
 (with-eval-after-load 'which-key
   (which-key-mode))
 
@@ -303,8 +303,10 @@
 (use-package avy
   :ensure t
   :config
-  (global-set-key (kbd "C-c ; c") 'avy-goto-char-timer)
-  (global-set-key (kbd "C-c ; l") 'avy-goto-line))
+  (progn
+    (unbind-key "C-c ;")
+    (global-set-key (kbd "C-c ; c") 'avy-goto-char-timer)
+    (global-set-key (kbd "C-c ; l") 'avy-goto-line)))
 
 (use-package ace-window
   :ensure t
