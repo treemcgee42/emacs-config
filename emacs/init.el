@@ -1,3 +1,5 @@
+(message "top of init file")
+
 (defmacro measure-time (msg &rest body)
   "Measure the time it takes to evaluate BODY."
   `(let ((time (current-time)))
@@ -102,6 +104,8 @@
   :custom
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref))
+(with-eval-after-load 'em-hist
+  (bind-key "M-r" #'consult-history 'eshell-hist-mode-map))
 
 (use-package orderless
   :ensure t
@@ -144,6 +148,27 @@
 
 (use-package rg
   :ensure t)
+
+;; [[ Eshell ]]
+
+(defun eshell/comp (&rest args)
+  "Calls `compile' interactively with the remaining arguments as the command."
+  (compile (string-join args " ") t))
+
+(setq eshell-buffer-maximum-lines 10000)
+(defun tm42/truncate-eshell-buffers ()
+  "Truncates all eshell buffers"
+  (interactive)
+  (save-current-buffer
+    (dolist (buffer (buffer-list t))
+      (set-buffer buffer)
+      (when (eq major-mode 'eshell-mode)
+        (eshell-truncate-buffer)))))
+;; After being idle for 5 seconds, truncate all the eshell-buffers if
+;; needed. If this needs to be canceled, you can run `(cancel-timer
+;; tm42/eshell-truncate-timer)'
+(setq tm42/eshell-truncate-timer
+      (run-with-idle-timer 5 t #'tm42/truncate-eshell-buffers))
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -252,6 +277,12 @@
 (with-eval-after-load 'which-key
   (which-key-mode))
 
+(defun toggle-show-trailing-whitespace ()
+  (interactive)
+  (setq show-trailing-whitespace (not show-trailing-whitespace)))
+
+(message "end section MISC")
+
 ;;; [[ Movement ]]
 
 (global-set-key (kbd "<f1>") 'previous-buffer)
@@ -274,9 +305,28 @@
 
 (repeat-mode 1)
 
-(require 'view)
-(global-set-key (kbd "C-v") 'View-scroll-half-page-forward)
-(global-set-key (kbd "M-v") 'View-scroll-half-page-backward)
+(defun tm42/move-and-scroll (distance)
+  (forward-line distance)
+  (scroll-up distance))
+
+(defun scroll-half-page-down ()
+  "scroll down half the page"
+  (interactive)
+  (let ((distance (/ (window-body-height) 2)))
+    (tm42/move-and-scroll distance)))
+
+(defun scroll-half-page-up ()
+  "scroll up half the page"
+  (interactive)
+  (let ((distance (/ (window-body-height) 2)))
+    (tm42/move-and-scroll (* -1 distance))))
+
+(global-set-key (kbd "C-v") 'scroll-half-page-down)
+(global-set-key (kbd "M-v") 'scroll-half-page-up)
+
+;; (require 'view)
+;; (global-set-key (kbd "C-v") 'View-scroll-half-page-forward)
+;; (global-set-key (kbd "M-v") 'View-scroll-half-page-backward)
 
 (use-package tm42-maximize-window
   :ensure nil
@@ -368,6 +418,8 @@ of the line."
           (isearch-repeat-forward)))
     ad-do-it))
 
+(message "end section MOVEMENT")
+
 ;; [[ Keybindings ]]
 
 ;; SHIFT + <arrow key> to move to window
@@ -451,7 +503,15 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   (setq org-agenda-files (get-org-agenda-files))
 
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "STARTED(s!)"  "|" "DONE(d!)")))
+        '((sequence "TODO(t)"
+                    "STARTED(s!)"
+                    "UNLAUNCED(u!)"
+                    "LAUNCED(l!)"
+                    "OPEN REVIEW(r!)"
+                    "SHIP IT(i!)"
+                    "|" ; Completed states
+                    "DONE(d!)"
+                    "MERGED(m!)")))
 
   (setq org-capture-templates
         '(("t" "Todo" entry (file "~/dev/projects/todo.org")
@@ -523,6 +583,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
     (corfu-terminal-mode 1)))
 
 (use-package cape
+  :after seq
   :ensure t
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
@@ -561,36 +622,6 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
   ;;(add-hook 'completion-at-point-functions #'cape-line)
 )
-  
-;; [[ Grep ]]
-
-(defun vm-grep-buffer-location-hook ()
-  "Determines where the grep buffer should pop up.
-
-- If it's already visible, just use that.
-- If there is only one window in the current frame, split it
-  horizontally and use the newly created window.
-- If there is more than one window, go to previously selected
-  window, split it vertically, and use the newly created window."
-  (when (not (get-buffer-window "*grep*"))
-    (cond ((eq (length (window-list)) 1)
-           (let ((w (split-window-horizontally)))
-             (select-window w)
-             (switch-to-buffer "*grep*")))
-          (t
-           (other-window 1)
-           (let ((w (split-window-vertically)))
-             (select-window w)
-             (switch-to-buffer "*grep*"))))))
-(add-hook 'grep-mode-hook 'vm-grep-buffer-location-hook)
-
-;; [[ Buffer groups ]]
-
-;; (use-package tm42-buffer-groups
-;;   :ensure nil
-;;   :demand
-;;   :bind (("C-x <left>" . tm42/bg/previous-buffer)
-;;          ("C-x <right>" . tm42/bg/next-buffer)))
 
 ;; [[ Mode line ]]
 
@@ -705,13 +736,15 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(custom-safe-themes
    '("c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
  '(eldoc-echo-area-use-multiline-p nil)
- '(grep-command "rg -nS --no-heading \"\"")
+ '(fill-column 85)
+ '(grep-command "rg -nS --no-heading ''")
  '(grep-command-position 22)
+ '(grep-use-null-device nil)
  '(indent-tabs-mode nil)
  '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
  '(show-trailing-whitespace t)
