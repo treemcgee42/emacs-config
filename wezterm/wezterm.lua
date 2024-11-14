@@ -12,6 +12,7 @@ end
 config.window_decorations = "RESIZE"
 
 config.font = wezterm.font_with_fallback {
+  { family = 'Iosevka Custom', weight = 'Medium' },
   'Berkeley Mono',
   'JetBrains Mono',
 }
