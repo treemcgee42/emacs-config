@@ -210,6 +210,8 @@
 (advice-add 'load-theme
             :after #'vm-remove-fringe-hook-all-frames)
 
+;; --- Tab bar ---------------------------------------------------------------------
+
 (tool-bar-mode -1)
 
 (if (not (display-graphic-p))
@@ -223,6 +225,14 @@
 ;; Honestly the menu bar is still useful-- combine it with the tab-bar.
 (require 'tab-bar)
 (tab-bar-mode)
+(setq tab-bar-format
+      (list #'tab-bar-format-menu-bar
+            #'tab-bar-format-history
+            #'tab-bar-format-tabs
+            #'tab-bar-separator
+            #'tab-bar-format-add-tab
+            #'tab-bar-format-align-right
+            #'tab-bar-format-global))
 (add-to-list 'tab-bar-format #'tab-bar-format-menu-bar)
 (setq tab-bar-menu-bar-button " π ")
 ;; Clock
@@ -235,6 +245,8 @@
 
 (defun tab-bar-tab-name-format-comfortable (tab i) (propertize (concat " " (tab-bar-tab-name-format-default tab i) " ") 'face (funcall tab-bar-tab-face-function tab)))
 (setq tab-bar-tab-name-format-function #'tab-bar-tab-name-format-comfortable)
+
+;; --- End tab bar -----------------------------------------------------------------
 
 (use-package embark
   :ensure t
@@ -331,6 +343,9 @@
 (use-package tm42-maximize-window
   :ensure nil
   :bind (([mode-line mouse-3] . 'tm42/maximize-clicked-window)))
+
+(use-package tm42-compilation-status
+  :ensure nil)
 
 ;; For move-text to re-indent line when moved.
 ;; From @jbreeden on the move-text Github README.
