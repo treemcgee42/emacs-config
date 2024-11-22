@@ -328,8 +328,7 @@
 (repeat-mode 1)
 
 (defun tm42/move-and-scroll (distance)
-  (forward-line distance)
-  (scroll-up distance))
+  (forward-line distance))
 
 (defun scroll-half-page-down ()
   "scroll down half the page"
