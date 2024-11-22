@@ -542,6 +542,23 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
         '(("t" "Todo" entry (file "~/dev/projects/todo.org")
            "* TODO %?")))
 
+  ;; Default keybinding C-c C-, is not recognized in the terminal.
+  (define-key org-mode-map (kbd "C-c ,") #'org-insert-structure-template)
+  ;; C-c ; is used by avy.
+  (define-key org-mode-map (kbd "C-c ;") nil)
+
+  (defun tm42/org-link-to-fn ()
+    (interactive)
+    (save-excursion
+      (beginning-of-defun)
+      (org-store-link 0 t)
+      (let ((link (car (car org-stored-links)))
+            (desc (format "~%s~" (which-function))))
+        (message "link %s desc %s" link desc)
+        (kill-new (org-link-make-string link desc))
+        (setq org-stored-links (cdr org-stored-links))
+        (message "Copied link to keyboard. Isn't that nice?"))))
+
   (defun vm-org-link-to-current-line ()
     "Creates an Org mode link to the file open in the current
  buffer, and the line pointed to by the cursor."
