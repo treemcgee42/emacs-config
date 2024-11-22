@@ -295,6 +295,16 @@
 
 (message "end section MISC")
 
+;; --- Languages -------------------------------------------------------------------
+(message "begin section LANGUAGES")
+
+(setq treesit-language-source-alist
+      '((c "https://github.com/tree-sitter/tree-sitter-c")
+        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+
+(message "end section LANGUAGES")
+;; --- End languages ---------------------------------------------------------------
+
 ;;; [[ Movement ]]
 
 (global-set-key (kbd "<f1>") 'previous-buffer)
