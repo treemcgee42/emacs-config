@@ -300,7 +300,11 @@
 
 (setq treesit-language-source-alist
       '((c "https://github.com/tree-sitter/tree-sitter-c")
-        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+        (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+        (python "https://github.com/tree-sitter/py-tree-sitter")))
+
+(when (treesit-available-p)
+  (push '("\\.py\\'" . python-ts-mode) auto-mode-alist))
 
 (message "end section LANGUAGES")
 ;; --- End languages ---------------------------------------------------------------
