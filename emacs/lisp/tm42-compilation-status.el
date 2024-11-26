@@ -40,7 +40,6 @@ difference between the end time and start time."
 (defun tm42/--compile-advice-around (compile-fn &rest args)
   "Creates a `tm42/compilation-info' instance for the given compilation invocation.
 Intended to be a around advice for `compile'."
-  (message "in advice")
   (let* ((command (car args))
          ;; This hook is called in the compilation before before executing the
          ;; command. We do most of the work here so we know what buffer we are
