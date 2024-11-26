@@ -568,7 +568,19 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
     (interactive)
     (let ((link (format "file:%s::%d" (buffer-file-name) (line-number-at-pos))))
       (kill-new link)
-      (message "Copied '%s' to the clipboard" link))))
+      (message "Copied '%s' to the clipboard" link)))
+
+  (defun tm42/org-copy-region-as-markdown ()
+    "Copy the region (in Org) to the system clipboard as Markdown."
+    (interactive)
+    (when (use-region-p)
+      (let* ((region (buffer-substring-no-properties
+		      (region-beginning)
+		      (region-end)))
+	     (markdown (org-export-string-as
+                        region 'md t '(:with-toc nil))))
+        (kill-new markdown))))
+  )
 
 ;; [[ Compilation ]]
 
