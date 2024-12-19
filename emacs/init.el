@@ -102,8 +102,8 @@
          ("C-x p f" . consult-fd)
          ("M-g i" . consult-imenu))
   :custom
-  (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref))
+  (xref-show-xrefs-function #'consult-xref)
+  (xref-show-definitions-function #'consult-xref))
 (with-eval-after-load 'em-hist
   (bind-key "M-r" #'consult-history 'eshell-hist-mode-map))
 
@@ -138,13 +138,7 @@
   :config (progn
            (push (vector meta-prefix-char ?o) eat-semi-char-non-bound-keys)
            (eat-update-semi-char-mode-map)
-           (eat-reload))
-  :config
-  ;; Ideally we would use :hook here, but for some reason it causes an infinite
-  ;; loop when loading eshell. This is a workaround.
-  (with-eval-after-load 'eshell
-    (eat-eshell-mode +1)
-    (eat-eshell-visual-command-mode +1)))
+           (eat-reload)))
 
 (use-package rg
   :ensure t)
@@ -169,6 +163,10 @@
 ;; tm42/eshell-truncate-timer)'
 (setq tm42/eshell-truncate-timer
       (run-with-idle-timer 5 t #'tm42/truncate-eshell-buffers))
+
+(with-eval-after-load 'eshell
+  (require 'em-smart)
+  (add-to-list 'eshell-modules-list 'eshell-smart))
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -292,6 +290,16 @@
 (defun toggle-show-trailing-whitespace ()
   (interactive)
   (setq show-trailing-whitespace (not show-trailing-whitespace)))
+
+(defun disable-show-trailing-whitespace ()
+  (interactive)
+  (setq show-trailing-whitespace nil))
+(add-hook 'eshell-mode-hook
+          'disable-show-trailing-whitespace)
+(add-hook 'compilation-mode-hook
+          'disable-show-trailing-whitespace)
+(add-hook 'comint-mode-hook
+          'disable-show-trailing-whitespace)
 
 (message "end section MISC")
 
@@ -626,6 +634,9 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 (add-hook 'compilation-finish-functions
           'tm42-switch-to-compilation-buffer-on-failure)
 
+(add-hook 'compilation-mode-hook
+          (lambda () (setq truncate-lines t)))
+
 ;; [[ Completion ]]
 
 (use-package corfu
@@ -775,13 +786,12 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 (which-function-mode)
 (tm42/ml/mode-line)
 
+(add-hook 'dired-mode-hook #'dired-omit-mode)
+
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (run-with-idle-timer
-             0.5
-             nil
-             (lambda ()
-               (message "Emacs started in %s" (emacs-init-time))))))
+            (message "Emacs started in %.3f seconds" (float-time (time-subtract (current-time) before-init-time)))
+            (message "- emacs-init-time: %s" (emacs-init-time))))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -792,6 +802,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(column-number-mode t)
  '(custom-safe-themes
    '("c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
+ '(dired-listing-switches "-alh")
  '(eldoc-echo-area-use-multiline-p nil)
  '(fill-column 85)
  '(grep-command "rg -nS --no-heading ''")
