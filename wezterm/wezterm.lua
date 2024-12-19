@@ -12,7 +12,8 @@ end
 config.window_decorations = "RESIZE"
 
 config.font = wezterm.font_with_fallback {
-  { family = 'Iosevka Custom', weight = 'Medium' },
+  -- 'Departure Mono',
+  -- { family = 'Iosevka Custom', weight = 'Medium' },
   'Berkeley Mono',
   'JetBrains Mono',
 }
@@ -32,6 +33,11 @@ config.keys = {
   {
     key = '-',
     mods = 'CTRL',
+    action = wezterm.action.DisableDefaultAssignment,
+  },
+  {
+    key = 'Enter',
+    mods = 'ALT',
     action = wezterm.action.DisableDefaultAssignment,
   },
 }
