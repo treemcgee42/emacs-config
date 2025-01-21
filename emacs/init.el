@@ -1,5 +1,18 @@
 (message "top of init file")
 
+(defmacro tm42/init-section (name &rest body)
+  (declare (indent 1))
+  `(let ((start-time (current-time)))
+     (message "init section %s punched IN at %s"
+              ,name
+              (format-time-string "%H:%M:%S" start-time))
+     (progn ,@body)
+     (let ((end-time (current-time)))
+       (message "init section %s punched OUT at %s (took %.06f)"
+                ,name
+                (format-time-string "%H:%M:%S" end-time)
+                (float-time (time-subtract end-time start-time))))))
+
 (defmacro measure-time (msg &rest body)
   "Measure the time it takes to evaluate BODY."
   `(let ((time (current-time)))
@@ -10,7 +23,8 @@
 (push "~/.config/emacs/lisp" load-path)
 (push "~/.config/emacs/themes" load-path)
 
-;; Install elpaca
+
+;; Install Elpaca
 (defvar elpaca-installer-version 0.7)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -55,6 +69,8 @@
   ;; Enable use-package :ensure support for Elpaca.
   (elpaca-use-package-mode))
 
+
+
 ;; Have shells, shell commands, etc. use emacs itself as an editor for
 ;; commands that need an editor (like git commit).
 (use-package with-editor
@@ -66,19 +82,20 @@
             (dolist (envvar with-editor-envvars)
               (add-hook hook (apply-partially 'with-editor-export-editor envvar)))))
 
-;; Magit requires a higher version of seq then installed on older emacs versions,
-;; this workaround is from https://github.com/progfolio/elpaca/issues/216
-(defun +elpaca-unload-seq (e)
-  (and (featurep 'seq) (unload-feature 'seq t))
-  (elpaca--continue-build e))
-(defun +elpaca-seq-build-steps ()
-  (append (butlast (if (file-exists-p (expand-file-name "seq" elpaca-builds-directory))
-                       elpaca--pre-built-steps elpaca-build-steps))
-          (list '+elpaca-unload-seq 'elpaca--activate-package)))
-(elpaca `(seq :build ,(+elpaca-seq-build-steps)))
-(use-package magit
-  :after seq
-  :ensure t)
+(tm42/init-section "Magit"
+  ;; Magit requires a higher version of seq then installed on older emacs versions,
+  ;; this workaround is from https://github.com/progfolio/elpaca/issues/216
+  (defun +elpaca-unload-seq (e)
+    (and (featurep 'seq) (unload-feature 'seq t))
+    (elpaca--continue-build e))
+  (defun +elpaca-seq-build-steps ()
+    (append (butlast (if (file-exists-p (expand-file-name "seq" elpaca-builds-directory))
+			 elpaca--pre-built-steps elpaca-build-steps))
+            (list '+elpaca-unload-seq 'elpaca--activate-package)))
+  ;; (elpaca `(seq :build ,(+elpaca-seq-build-steps)))
+  (use-package magit
+    :after seq
+    :ensure t))
 
 (use-package vertico
   :ensure t
@@ -95,17 +112,74 @@
   :init
   (marginalia-mode))
 
-(use-package consult
-  :ensure t
-  :bind (("C-x b" . consult-buffer)
-         ("C-x p b" . consult-project-buffer)
-         ("C-x p f" . consult-fd)
-         ("M-g i" . consult-imenu))
-  :custom
-  (xref-show-xrefs-function #'consult-xref)
-  (xref-show-definitions-function #'consult-xref))
-(with-eval-after-load 'em-hist
-  (bind-key "M-r" #'consult-history 'eshell-hist-mode-map))
+;; --- begin consult ----------------------------------------------------------------
+
+(tm42/init-section "Consult"
+  (use-package consult
+    :ensure t
+    :bind (("C-x b" . consult-buffer)
+           ("C-x p b" . consult-project-buffer)
+           ("C-x p f" . consult-fd)
+           ("M-g i" . consult-imenu)
+           ("M-g g" . consult-goto-line)
+           ;; Custom M-# bindings for fast register access
+           ("M-#" . consult-register)
+           ("M-'" . consult-register-store))          ;; orig. abbrev-prefix-mark (unrelated)
+    :custom
+    ;; Tweak the register preview for `consult-register-load',
+    ;; `consult-register-store' and the built-in commands.  This improves the
+    ;; register formatting, adds thin separator lines, register sorting and hides
+    ;; the window mode line.
+    (advice-add #'register-preview :override #'consult-register-window)
+    (setq register-preview-delay 0.5)
+    (xref-show-xrefs-function #'consult-xref)
+    (xref-show-definitions-function #'consult-xref))
+  (with-eval-after-load 'em-hist
+    (bind-key "M-r" #'consult-history 'eshell-hist-mode-map))
+
+  (defun tm42/pdb-locations ()
+    "Return value is a hash map whose key is a descriptive string and whose value
+is an alist with the following keys:
+- MARKER: the value of the point as a marker object
+- LINE
+- COLUMN
+"
+    (let ((result (make-hash-table :test 'equal)))
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward (rx ".pdb()") nil t)
+          (let ((line (line-number-at-pos))
+                (column (current-column))
+                (marker (point-marker)))
+            (puthash
+             (format "Line %d column %s" line column)
+             (list (cons 'line line)
+                   (cons 'column column)
+                   (cons 'marker marker))
+             result))))
+      result))
+
+
+  (defun tm42/consult-breakpoints ()
+    "View the breakpoints in the current buffer in an imenu-like interface.
+This function utilizes consult."
+    (interactive)
+    (let ((locations (tm42/pdb-locations)))
+      (consult--read
+       locations
+       :prompt "Breakpoint: "
+       :category 'consult-location
+       :state
+       (let ((preview (consult--jump-state)))
+         (lambda (action candidate)
+           (funcall preview
+                    action
+                    (when candidate
+                      (alist-get 'marker
+                                 (gethash candidate locations))))))
+       :require-match t))))
+
+;; --- end consult ------------------------------------------------------------------
 
 (use-package orderless
   :ensure t
@@ -136,9 +210,10 @@
 (use-package eat
   :ensure t
   :config (progn
-           (push (vector meta-prefix-char ?o) eat-semi-char-non-bound-keys)
-           (eat-update-semi-char-mode-map)
-           (eat-reload)))
+            (push (vector meta-prefix-char ?o) eat-semi-char-non-bound-keys)
+            (push (vector meta-prefix-char ?#) eat-semi-char-non-bound-keys)
+            (eat-update-semi-char-mode-map)
+            (eat-reload)))
 
 (use-package rg
   :ensure t)
@@ -148,6 +223,22 @@
 (defun eshell/comp (&rest args)
   "Calls `compile' interactively with the remaining arguments as the command."
   (compile (string-join args " ") t))
+
+(defun eshell/tm42-copy (&optional n)
+  "Copy the last N eshell command and command outputs."
+  (let ((start nil)
+        (end nil))
+    (save-excursion
+      (eshell-previous-prompt n)
+      (beginning-of-line)
+      (setf start (point))
+      ;; We are currently at the beginning of the line of a prompt. Going to the next
+      ;; prompt now will move to the end of the prompt on this line.
+      ;; `eshell-end-of-output' will move to the end of the output of the current
+      ;; prompt.
+      (eshell-next-prompt n)
+      (setf end (eshell-end-of-output))
+      (copy-region-as-kill start end))))
 
 (setq eshell-buffer-maximum-lines 10000)
 (defun tm42/truncate-eshell-buffers ()
@@ -167,6 +258,54 @@
 (with-eval-after-load 'eshell
   (require 'em-smart)
   (add-to-list 'eshell-modules-list 'eshell-smart))
+
+;; --- begin eshell smart restore command -------------------------------------------
+
+(defvar *tm42/eshell/prev-cmd* ""
+  "Stores the previously executed eshell command, for the restore command
+functionality.")
+
+(defun tm42/eshell/restore-prev-cmd-p ()
+  "Function to determine whether we should be exercising the restore command
+functionality."
+  (and (member 'eshell-smart eshell-modules-list)))
+
+(defun tm42/eshell/get-input ()
+  "Get the input at the current eshell prompt. Assumes point is within the input."
+  (let ((beg (save-excursion
+               (eshell-previous-prompt 0)
+               (point)))
+        (end (save-excursion
+               (end-of-line)
+               (point))))
+    (buffer-substring-no-properties beg end)))
+
+(defun tm42/eshell/maybe-restore-prev-cmd (&optional use-region queue-p no-newline)
+  "In eshell smart mode, when modifying the previous command, calling this function
+before `eshell-send-input' (the function RET is bound to) will restore the previous
+command to the prompt line. That way, the output of the previous command will
+correspond to the input on the prompt above it."
+  (when (and (tm42/eshell/restore-prev-cmd-p)
+             *tm42/eshell/prev-cmd*)
+    (end-of-line)
+    (when (not (eql (point) (point-max)))
+      (let ((current-cmd (tm42/eshell/get-input)))
+        (eshell-previous-prompt 0)
+        (kill-line)
+        (insert *tm42/eshell/prev-cmd*)
+        (goto-char (point-max))
+        (insert current-cmd)))))
+
+(defun tm42/eshell/store-prev-cmd (&optional use-region queue-p no-newline)
+  "Store the command that was just executed, assuming eshell smart mode."
+  (when (tm42/eshell/restore-prev-cmd-p)
+    (setf *tm42/eshell/prev-cmd* (tm42/eshell/get-input))))
+
+(with-eval-after-load 'eshell
+  (advice-add 'eshell-send-input :before #'tm42/eshell/maybe-restore-prev-cmd)
+  (advice-add 'eshell-send-input :after #'tm42/eshell/store-prev-cmd))
+
+;; --- end eshell smart restore command ---------------------------------------------
 
 ;; [[ Company-specific ]]
 ;; These files are only included if they exist (I'll have them on company machines).
@@ -317,144 +456,145 @@
 (message "end section LANGUAGES")
 ;; --- End languages ---------------------------------------------------------------
 
-;;; [[ Movement ]]
+;; --- begin Movement ---------------------------------------------------------------
+(tm42/init-section
+ "Movement"
+ (global-set-key (kbd "<f1>") 'previous-buffer)
+ (global-set-key (kbd "<f2>") 'next-buffer)
+ (global-set-key (kbd "<f3>") 'other-window)
 
-(global-set-key (kbd "<f1>") 'previous-buffer)
-(global-set-key (kbd "<f2>") 'next-buffer)
-(global-set-key (kbd "<f3>") 'other-window)
+ (global-set-key (kbd "C-x ]") 'tab-bar-switch-to-next-tab)
+ (global-set-key (kbd "C-x [") 'tab-bar-switch-to-prev-tab)
 
-(global-set-key (kbd "C-x ]") 'tab-bar-switch-to-next-tab)
-(global-set-key (kbd "C-x [") 'tab-bar-switch-to-prev-tab)
+ (global-set-key (kbd "M-n")
+                 (lambda ()
+                   (interactive)
+                   (forward-line)
+                   (scroll-up-line)))
+ (global-set-key (kbd "M-p")
+                 (lambda ()
+                   (interactive)
+                   (previous-line)
+                   (scroll-down-line)))
 
-(global-set-key (kbd "M-n")
-                (lambda ()
-                  (interactive)
-                  (forward-line)
-                  (scroll-up-line)))
-(global-set-key (kbd "M-p")
-                (lambda ()
-                  (interactive)
-                  (previous-line)
-                  (scroll-down-line)))
+ (repeat-mode 1)
 
-(repeat-mode 1)
+ (defun tm42/move-and-scroll (distance)
+   (forward-line distance))
 
-(defun tm42/move-and-scroll (distance)
-  (forward-line distance))
+ (defun scroll-half-page-down ()
+   "scroll down half the page"
+   (interactive)
+   (let ((distance (/ (window-body-height) 2)))
+     (tm42/move-and-scroll distance)))
 
-(defun scroll-half-page-down ()
-  "scroll down half the page"
-  (interactive)
-  (let ((distance (/ (window-body-height) 2)))
-    (tm42/move-and-scroll distance)))
+ (defun scroll-half-page-up ()
+   "scroll up half the page"
+   (interactive)
+   (let ((distance (/ (window-body-height) 2)))
+     (tm42/move-and-scroll (* -1 distance))))
 
-(defun scroll-half-page-up ()
-  "scroll up half the page"
-  (interactive)
-  (let ((distance (/ (window-body-height) 2)))
-    (tm42/move-and-scroll (* -1 distance))))
+ (global-set-key (kbd "C-v") 'scroll-half-page-down)
+ (global-set-key (kbd "M-v") 'scroll-half-page-up)
 
-(global-set-key (kbd "C-v") 'scroll-half-page-down)
-(global-set-key (kbd "M-v") 'scroll-half-page-up)
+ ;; (require 'view)
+ ;; (global-set-key (kbd "C-v") 'View-scroll-half-page-forward)
+ ;; (global-set-key (kbd "M-v") 'View-scroll-half-page-backward)
 
-;; (require 'view)
-;; (global-set-key (kbd "C-v") 'View-scroll-half-page-forward)
-;; (global-set-key (kbd "M-v") 'View-scroll-half-page-backward)
+ (use-package tm42-maximize-window
+   :ensure nil
+   :bind (([mode-line mouse-3] . 'tm42/maximize-clicked-window)))
 
-(use-package tm42-maximize-window
-  :ensure nil
-  :bind (([mode-line mouse-3] . 'tm42/maximize-clicked-window)))
+ (use-package tm42-compilation-status
+   :ensure nil)
 
-(use-package tm42-compilation-status
-  :ensure nil)
+ ;; For move-text to re-indent line when moved.
+ ;; From @jbreeden on the move-text Github README.
+ (defun indent-region-advice (&rest ignored)
+   (let ((deactivate deactivate-mark))
+     (if (region-active-p)
+         (indent-region (region-beginning) (region-end))
+       (indent-region (line-beginning-position) (line-end-position)))
+     (setq deactivate-mark deactivate)))
 
-;; For move-text to re-indent line when moved.
-;; From @jbreeden on the move-text Github README.
-(defun indent-region-advice (&rest ignored)
-  (let ((deactivate deactivate-mark))
-    (if (region-active-p)
-        (indent-region (region-beginning) (region-end))
-      (indent-region (line-beginning-position) (line-end-position)))
-    (setq deactivate-mark deactivate)))
+ ;; M-up / M-down to move the current line up / down.
+ (use-package move-text
+   :ensure t
+   :config
+   (progn
+     (move-text-default-bindings)
+     (advice-add 'move-text-up :after 'indent-region-advice)
+     (advice-add 'move-text-down :after 'indent-region-advice)))
 
-;; M-up / M-down to move the current line up / down.
-(use-package move-text
-  :ensure t
-  :config
-  (progn
-    (move-text-default-bindings)
-    (advice-add 'move-text-up :after 'indent-region-advice)
-    (advice-add 'move-text-down :after 'indent-region-advice)))
+ (use-package avy
+   :ensure t
+   :config
+   (progn
+     (unbind-key "C-c ;")
+     (global-set-key (kbd "C-c ; c") 'avy-goto-char-timer)
+     (global-set-key (kbd "C-c ; l") 'avy-goto-line)))
 
-(use-package avy
-  :ensure t
-  :config
-  (progn
-    (unbind-key "C-c ;")
-    (global-set-key (kbd "C-c ; c") 'avy-goto-char-timer)
-    (global-set-key (kbd "C-c ; l") 'avy-goto-line)))
-
-(use-package ace-window
-  :ensure t
-  :config
-  (global-set-key (kbd "M-o") 'ace-window))
-(add-hook
- 'elpaca-after-init-hook
- (lambda ()
-   (setq switch-to-buffer-obey-display-actions t)
-   (global-set-key (kbd "C-x 4 o") 'ace-window-prefix)))
-(defun ace-window-prefix ()
-  "Use `ace-window' to display the buffer of the next command.
+ (use-package ace-window
+   :ensure t
+   :config
+   (global-set-key (kbd "M-o") 'ace-window))
+ (add-hook
+  'elpaca-after-init-hook
+  (lambda ()
+    (setq switch-to-buffer-obey-display-actions t)
+    (global-set-key (kbd "C-x 4 o") 'ace-window-prefix)))
+ (defun ace-window-prefix ()
+   "Use `ace-window' to display the buffer of the next command.
 The next buffer is the buffer displayed by the next command invoked
 immediately after this command (ignoring reading from the minibuffer).
 Creates a new window before displaying the buffer.
 When `switch-to-buffer-obey-display-actions' is non-nil,
 `switch-to-buffer' commands are also supported."
-  (interactive)
-  (display-buffer-override-next-command
-   (lambda (buffer _)
-     (let (window type)
-       (setq
-        window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
-        type 'reuse)
-       (cons window type)))
-   nil "[ace-window]")
-  (message "Use `ace-window' to display next command buffer..."))
+   (interactive)
+   (display-buffer-override-next-command
+    (lambda (buffer _)
+      (let (window type)
+        (setq
+         window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
+         type 'reuse)
+        (cons window type)))
+    nil "[ace-window]")
+   (message "Use `ace-window' to display next command buffer..."))
 
-(defun tm42-smart-beginning-of-line ()
-  "Move point to first beginning of line or non-whitespace character.
+ (defun tm42-smart-beginning-of-line ()
+   "Move point to first beginning of line or non-whitespace character.
 If the point is already at the beginning of the line, move to the
 first non-whitespace character. Otherwise just move to the beginning
 of the line."
-  (interactive)
-  (let ((original-point (point)))
-    (move-beginning-of-line 1)
-    (when (= original-point (point))
-      (back-to-indentation))))
-(global-set-key (kbd "C-a") 'tm42-smart-beginning-of-line)
+   (interactive)
+   (let ((original-point (point)))
+     (move-beginning-of-line 1)
+     (when (= original-point (point))
+       (back-to-indentation))))
+ (global-set-key (kbd "C-a") 'tm42-smart-beginning-of-line)
 
-;; From Karthinks emacs window management almanac
-(define-advice pop-global-mark (:around (pgm) use-display-buffer)
-  "Make `pop-to-buffer' jump buffers via `display-buffer'."
-  (cl-letf (((symbol-function 'switch-to-buffer)
-                         #'pop-to-buffer))
-                (funcall pgm)))
+ ;; From Karthinks emacs window management almanac
+ (define-advice pop-global-mark (:around (pgm) use-display-buffer)
+   "Make `pop-to-buffer' jump buffers via `display-buffer'."
+   (cl-letf (((symbol-function 'switch-to-buffer)
+              #'pop-to-buffer))
+     (funcall pgm)))
 
-;; Use selection to search.
-;; https://blog.chmouel.com/posts/emacs-isearch/
-(defadvice isearch-mode (around isearch-mode-default-string (forward &optional regexp op-fun recursive-edit word-p) activate)
-  (if (and transient-mark-mode mark-active (not (eq (mark) (point))))
-      (progn
-        (isearch-update-ring (buffer-substring-no-properties (mark) (point)))
-        (deactivate-mark)
-        ad-do-it
-        (if (not forward)
-            (isearch-repeat-backward)
-          (goto-char (mark))
-          (isearch-repeat-forward)))
-    ad-do-it))
-
-(message "end section MOVEMENT")
+ ;; Use selection to search.
+ ;; https://blog.chmouel.com/posts/emacs-isearch/
+ (defadvice isearch-mode (around isearch-mode-default-string (forward &optional regexp op-fun recursive-edit word-p) activate)
+   (if (and transient-mark-mode mark-active (not (eq (mark) (point))))
+       (progn
+         (isearch-update-ring (buffer-substring-no-properties (mark) (point)))
+         (deactivate-mark)
+         ad-do-it
+         (if (not forward)
+             (isearch-repeat-backward)
+           (goto-char (mark))
+           (isearch-repeat-forward)))
+     ad-do-it))
+ )
+;; --- end Movement -----------------------------------------------------------------
 
 ;; [[ Keybindings ]]
 
@@ -578,6 +718,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
       (kill-new link)
       (message "Copied '%s' to the clipboard" link)))
 
+  (require 'ox-md)
   (defun tm42/org-copy-region-as-markdown ()
     "Copy the region (in Org) to the system clipboard as Markdown."
     (interactive)
@@ -589,6 +730,53 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
                         region 'md t '(:with-toc nil))))
         (kill-new markdown))))
   )
+
+;; [[ dumb grep ]]
+
+(defun tm42/dumbgrep/generate-grep-string (re &optional file-extension)
+  (let ((prefix "rg -nS --no-heading")
+        (suffix
+         (pcase file-extension
+           ('py "-tpy")
+           (_ "")))
+        (root (if-let ((project (project-current nil)))
+                  (project-root project)
+                "")))
+    (string-join (list prefix
+                       (format "'%s'" re)
+                       suffix
+                       root)
+                 " ")))
+
+(defun tm42/dumbgrep/python-definition (name)
+  (when (string-match-p "python" (symbol-name major-mode))
+    (let* ((re (format "(def|class) %s" name)))
+      (tm42/dumbgrep/generate-grep-string re 'py))))
+
+(defvar tm42/dumbgrep/generators
+  (list #'tm42/dumbgrep/python-definition)
+  "List of functions used to generate grep command strings. Specifically,
+a \"generator\" is a function that
+- takes a single NAME parameter, which is the thing to look up
+- returns NIL if the function should not handle this request, essentially deferring
+  the search to another generator
+- returns a grep command string if it can handle the request.")
+
+(defun tm42/dumbgrep (&optional name)
+  (interactive)
+  (let* ((name (if name name (thing-at-point 'symbol)))
+         (grep-cmd
+          (catch 'break
+            (dolist (generator tm42/dumbgrep/generators)
+              (when-let ((grep-cmd (funcall generator name)))
+                (message "grep-cmd: %s" grep-cmd)
+                (setq grep-cmd
+                      (read-string "Run grep (like this): "
+                                   grep-cmd))
+                (throw 'break grep-cmd))))))
+    (if grep-cmd
+        (grep grep-cmd)
+      (message "Couldn't guess the grep!"))))
 
 ;; [[ Compilation ]]
 
@@ -637,59 +825,29 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 (add-hook 'compilation-mode-hook
           (lambda () (setq truncate-lines t)))
 
-;; [[ Completion ]]
-
-(use-package corfu
-  :ensure t
-  :init
-  (global-corfu-mode))
-
-(unless (display-graphic-p)
-  (use-package corfu-terminal
-    :ensure t
-    :custom
-    (corfu-terminal-mode 1)))
-
-(use-package cape
-  :after seq
-  :ensure t
-  ;; Bind dedicated completion commands
-  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
-  :bind (("C-c p p" . completion-at-point) ;; capf
-         ("C-c p t" . complete-tag)        ;; etags
-         ("C-c p d" . cape-dabbrev)        ;; or dabbrev-completion
-         ("C-c p h" . cape-history)
-         ("C-c p f" . cape-file)
-         ("C-c p k" . cape-keyword)
-         ("C-c p s" . cape-elisp-symbol)
-         ("C-c p e" . cape-elisp-block)
-         ("C-c p a" . cape-abbrev)
-         ("C-c p l" . cape-line)
-         ("C-c p w" . cape-dict)
-         ("C-c p :" . cape-emoji)
-         ("C-c p \\" . cape-tex)
-         ("C-c p _" . cape-tex)
-         ("C-c p ^" . cape-tex)
-         ("C-c p &" . cape-sgml)
-         ("C-c p r" . cape-rfc1345))
-  :init
-  ;; Add to the global default value of `completion-at-point-functions' which is
-  ;; used by `completion-at-point'.  The order of the functions matters, the
-  ;; first function returning a result wins.  Note that the list of buffer-local
-  ;; completion functions takes precedence over the global list.
-  (add-hook 'completion-at-point-functions #'cape-dabbrev)
-  (add-hook 'completion-at-point-functions #'cape-file)
-  (add-hook 'completion-at-point-functions #'cape-elisp-block)
-  ;;(add-hook 'completion-at-point-functions #'cape-history)
-  ;;(add-hook 'completion-at-point-functions #'cape-keyword)
-  ;;(add-hook 'completion-at-point-functions #'cape-tex)
-  ;;(add-hook 'completion-at-point-functions #'cape-sgml)
-  ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-hook 'completion-at-point-functions #'cape-dict)
-  ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
-  ;;(add-hook 'completion-at-point-functions #'cape-line)
-)
+(defun tm42/compile-to-buffer (command &optional buf comint ask)
+  "Wrapper around `compile'. COMMAND is the command to execute. BUF, if non-nil, is
+the name of the buffer to compile to. COMINT controls interactive compilation. ASK
+indicates whether the user should be prompted with the command and required to
+confirm before proceeding (similar to what happens when calling `compile'
+interactively)."
+  (cl-letf (;; Optionally override the function that determines the compilation
+            ;; buffer name.
+            ((symbol-function 'compilation-buffer-name)
+             (if buf
+                 (lambda (name-of-mode _mode-command name-function)
+                   buf)
+               #'compilation-buffer-name))
+            ;; When calling interactively this is used since we can't directly pass
+            ;; in a comint argument. The value must be a cons, looking at the
+            ;; implementation.
+            (current-prefix-arg (when comint '(1)))
+            ;; When calling interactively this will fill in the default command
+            ;; for the user to verify.
+            (compile-command command))
+    (if ask
+        (call-interactively #'compile)
+      (compile command comint))))
 
 ;; [[ Mode line ]]
 
@@ -802,7 +960,8 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(column-number-mode t)
  '(custom-safe-themes
    '("c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
- '(dired-listing-switches "-alh")
+ '(dired-dwim-target t)
+ '(dired-listing-switches "-alhv")
  '(eldoc-echo-area-use-multiline-p nil)
  '(fill-column 85)
  '(grep-command "rg -nS --no-heading ''")
@@ -813,6 +972,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
  '(org-log-into-drawer t)
  '(package-selected-packages
    '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+ '(pylint-command "a git pylint")
  '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
  '(show-trailing-whitespace t)

@@ -59,9 +59,10 @@ Intended to be a around advice for `compile'."
   "Update the buffer-local info variable when the compilation has finished.
 Safe to add to `compilation-finish-functions' because it's a no-op if the
 variable doesn't exist."
-  (when tm42/compilation-info-var
-    (let ((passed (string-match "^finished" msg)))
-      (tm42/--compilation-info-finish tm42/compilation-info-var passed))))
+  (let ((s 'tm42/compilation-info-var))
+    (when (and (boundp s) (local-variable-p s))
+      (let ((passed (string-match "^finished" msg)))
+        (tm42/--compilation-info-finish tm42/compilation-info-var passed)))))
 
 (add-hook 'compilation-finish-functions
           #'tm42/--compilation-status-compile-finish-hook)
