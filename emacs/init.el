@@ -849,6 +849,15 @@ interactively)."
         (call-interactively #'compile)
       (compile command comint))))
 
+(defun tm42/send-text-to-comint (text comint-buffer-name)
+  (comint-send-string comint-buffer-name text)
+  (comint-send-string comint-buffer-name "\n"))
+
+(defun tm42/send-region-to-comint (start end comint-buffer-name)
+  (interactive "r\nbComint buffer: ")
+  (let ((text (buffer-substring-no-properties start end)))
+    (tm42/send-text-to-comint text comint-buffer-name)))
+
 ;; [[ Mode line ]]
 
 (defface tm42/ml/normal-face
