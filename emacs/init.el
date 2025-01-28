@@ -858,6 +858,29 @@ interactively)."
   (let ((text (buffer-substring-no-properties start end)))
     (tm42/send-text-to-comint text comint-buffer-name)))
 
+(defun tm42/compile-goto-error-this-window (&optional event)
+  (interactive)
+  (let ((display-buffer-overriding-action
+         '((display-buffer-reuse-window
+            display-buffer-same-window)
+           (inhibit-same-window . nil))))
+    (call-interactively #'compile-goto-error)))
+
+(defun tm42/compile-goto-error-other-window (&optional event)
+  (interactive)
+  (compile-goto-error event))
+
+(defvar tm42/grep-mode-map (make-sparse-keymap))
+(define-key tm42/grep-mode-map (kbd "O") #'tm42/compile-goto-error-this-window)
+(define-key tm42/grep-mode-map (kbd "o") #'tm42/compile-goto-error-other-window)
+
+(define-minor-mode tm42/grep-mode
+  "Minor mode to add tm42's customizations to grep-mode."
+  :keymap tm42/grep-mode-map)
+
+(with-eval-after-load 'grep
+  (add-hook 'grep-mode-hook #'tm42/grep-mode))
+
 ;; [[ Mode line ]]
 
 (defface tm42/ml/normal-face
