@@ -1,3 +1,5 @@
+;;; init.el --- My init file ---        -*- lexical-binding: t; -*-
+
 (message "top of init file")
 
 (defmacro tm42/init-section (name &rest body)
