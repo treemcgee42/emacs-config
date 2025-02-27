@@ -846,6 +846,13 @@ interactively)."
         (call-interactively #'compile)
       (compile command comint))))
 
+(defun tm42/pdb-to-buffer (command &optional ask)
+  (if ask
+      (progn
+        (push command gud-pdb-history)
+        (call-interactively #'pdb))
+    (pdb command)))
+
 (defun tm42/send-text-to-comint (text comint-buffer-name)
   (comint-send-string comint-buffer-name text)
   (comint-send-string comint-buffer-name "\n"))
