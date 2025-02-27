@@ -733,50 +733,8 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 ;; [[ dumb grep ]]
 
-(defun tm42/dumbgrep/generate-grep-string (re &optional file-extension)
-  (let ((prefix "rg -nS --no-heading")
-        (suffix
-         (pcase file-extension
-           ('py "-tpy")
-           (_ "")))
-        (root (if-let ((project (project-current nil)))
-                  (project-root project)
-                "")))
-    (string-join (list prefix
-                       (format "'%s'" re)
-                       suffix
-                       root)
-                 " ")))
-
-(defun tm42/dumbgrep/python-definition (name)
-  (when (string-match-p "python" (symbol-name major-mode))
-    (let* ((re (format "(def|class) %s" name)))
-      (tm42/dumbgrep/generate-grep-string re 'py))))
-
-(defvar tm42/dumbgrep/generators
-  (list #'tm42/dumbgrep/python-definition)
-  "List of functions used to generate grep command strings. Specifically,
-a \"generator\" is a function that
-- takes a single NAME parameter, which is the thing to look up
-- returns NIL if the function should not handle this request, essentially deferring
-  the search to another generator
-- returns a grep command string if it can handle the request.")
-
-(defun tm42/dumbgrep (&optional name)
-  (interactive)
-  (let* ((name (if name name (thing-at-point 'symbol)))
-         (grep-cmd
-          (catch 'break
-            (dolist (generator tm42/dumbgrep/generators)
-              (when-let ((grep-cmd (funcall generator name)))
-                (message "grep-cmd: %s" grep-cmd)
-                (setq grep-cmd
-                      (read-string "Run grep (like this): "
-                                   grep-cmd))
-                (throw 'break grep-cmd))))))
-    (if grep-cmd
-        (grep grep-cmd)
-      (message "Couldn't guess the grep!"))))
+(use-package tm42-dumbgrep
+  :ensure nil)
 
 ;; [[ Compilation ]]
 
