@@ -360,8 +360,50 @@ correspond to the input on the prompt above it."
 (setq global-hl-line-sticky-flag t)
 
 ;; Honestly the menu bar is still useful-- combine it with the tab-bar.
+
 (require 'tab-bar)
 (tab-bar-mode)
+
+(defun tm42/tab-bar-compilation-provider-generator (buffer-rx text)
+  "Helper to generate functions for `tm42/tab-bar-compilation-status-providers'.
+It generates a function that checks how many buffers have a name matching
+BUFFER-RX and also have an active process. TEXT is the text that will be
+displayed in the tab bar."
+  (lambda ()
+    (let ((buffers
+           (seq-filter (lambda (buf)
+                         (and (string-match buffer-rx (buffer-name buf))
+                              (get-buffer-process buf)))
+                       (buffer-list))))
+      (cons text (length buffers)))))
+
+(defvar tm42/tab-bar-compilation-provider
+  (tm42/tab-bar-compilation-provider-generator
+   (rx "*compilation"
+       (optional (seq "<" digit ">"))
+       "*")
+   "Compiling"))
+
+(defvar tm42/tab-bar-compilation-status-providers
+  (list tm42/tab-bar-compilation-provider)
+  "Functions which may provide information to populate the tab bar
+compilation status.  Each function should take no arguments and
+return a cons cell whose car is the name to be displayed and cdr
+is the number of instances. The name is displayed if the number
+of instances is nonzero, and the number of instances is displayed
+if it is greater than one.")
+
+(defun tm42/tab-bar-compilation-status ()
+  (let (items)
+    (dolist (provider tm42/tab-bar-compilation-status-providers)
+      (pcase-let ((`(,text . ,num) (funcall provider)))
+        (when (> num 0)
+          (if (> num 1)
+              (push (format "%s(%d)" text num) 'items)
+            (push text items)))))
+    (when items
+      (concat "[" (mapconcat #'identity items ", ") "]"))))
+
 (setq tab-bar-format
       (list #'tab-bar-format-menu-bar
             #'tab-bar-format-history
@@ -369,6 +411,8 @@ correspond to the input on the prompt above it."
             #'tab-bar-separator
             #'tab-bar-format-add-tab
             #'tab-bar-format-align-right
+            #'tm42/tab-bar-compilation-status
+            (lambda () "    ")
             #'tab-bar-format-global))
 (add-to-list 'tab-bar-format #'tab-bar-format-menu-bar)
 (setq tab-bar-menu-bar-button " π ")
