@@ -908,10 +908,44 @@ interactively)."
 		  (:propertize "    "
 			       face tm42/ml/normal-face)
 		  (:propertize "%b" face tm42/ml/bold-face)
+                  "   "
+                  (vc-mode vc-mode)
                   (:eval (tm42/ml/padding-before-right-aligned-content))
                   (:eval tm42/ml/right-aligned-content)
 		  )
 	        ))
+
+(defun tm42/mode-line-2 ()
+  (interactive)
+  (setq-default mode-line-format
+	        '((:propertize " "
+                               face tm42/ml/normal-face)
+                  (:eval
+                   (if (buffer-modified-p)
+                       (propertize "%p"
+                                   'face
+                                   'tm42/ml/unsaved-face)
+                     (propertize "%p"
+                                 'face
+                                 'tm42/ml/saved-face)))
+                  (:propertize " "
+                               face tm42/ml/normal-face)
+		  (:propertize "%4l:"
+			       face tm42/ml/normal-face)
+		  (:eval
+		   (propertize "%3c"
+			       'face
+			       (if (>= (current-column) fill-column)
+				   'tm42/ml/past-fill-column-face
+			         'tm42/ml/normal-face)))
+		  (:propertize "    "
+			       face tm42/ml/normal-face)
+		  (:propertize "%b" face tm42/ml/bold-face)
+                  "   "
+                  which-func-format
+                  "   "
+                  "(" (vc-mode vc-mode) " )"
+                  mode-line-end-spaces)))
 
 (defun tm42/ml/default-mode-line ()
   (interactive)
