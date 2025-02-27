@@ -307,15 +307,6 @@ correspond to the input on the prompt above it."
 
 ;; --- end eshell smart restore command ---------------------------------------------
 
-;; [[ Company-specific ]]
-;; These files are only included if they exist (I'll have them on company machines).
-
-(measure-time
- "Loading vm-arista"
- (condition-case nil
-     (require 'vm-arista)
-   (file-error nil)))
-
 ;; [[ Misc ]]
 
 (setq inhibit-startup-screen t)
@@ -1017,6 +1008,15 @@ interactively)."
 (tm42/ml/mode-line)
 
 (add-hook 'dired-mode-hook #'dired-omit-mode)
+
+;; [[ Company-specific ]]
+;; These files are only included if they exist (I'll have them on company machines).
+
+(measure-time
+ "Loading vm-arista"
+ (condition-case nil
+     (require 'vm-arista)
+   (file-error nil)))
 
 (add-hook 'emacs-startup-hook
           (lambda ()
