@@ -99,20 +99,18 @@
     :after seq
     :ensure t))
 
-(use-package vertico
+(customize-set-value 'dabbrev-case-replace nil)
+
+(with-eval-after-load 'completion-preview
+  (global-completion-preview-mode))
+
+(use-package cape
   :ensure t
   :init
-  (vertico-mode))
-
-(use-package vertico-flat
-  :after vertico
-  :ensure nil
-  :init (vertico-flat-mode))
-
-(use-package marginalia
-  :ensure t
-  :init
-  (marginalia-mode))
+  ;; The order of the functions matters, the first function returning a result wins.
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block))
 
 ;; --- begin consult ----------------------------------------------------------------
 
@@ -188,6 +186,14 @@ This function utilizes consult."
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
+
+(fido-mode)
+(customize-set-value
+ 'icomplete-prospects-height 1
+ "Do not expand the minibuffer with extra search results. I find that to be distracting.")
+(defun tm42/icomplete-styles ()
+  (setq-local completion-styles '(orderless flex)))
+(add-hook 'icomplete-minibuffer-setup-hook 'tm42/icomplete-styles)
 
 (use-package expand-region
   :ensure t
