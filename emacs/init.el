@@ -321,7 +321,8 @@ correspond to the input on the prompt above it."
 (setq ns-use-proxy-icon nil)
 (setq frame-title-format nil)
 
-(scroll-bar-mode -1)
+(if (boundp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
 
 ;; Makes it so the fringe doesn't have a special color, and blends in
 ;; with the background.
@@ -337,6 +338,9 @@ correspond to the input on the prompt above it."
 (add-hook 'after-make-frame-functions 'vm-remove-fringe-hook)
 (advice-add 'load-theme
             :after #'vm-remove-fringe-hook-all-frames)
+
+(with-eval-after-load 'project
+  (add-to-list 'project-find-functions 'project-try-vc))
 
 ;; --- Tab bar ---------------------------------------------------------------------
 
