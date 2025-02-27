@@ -782,6 +782,10 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 
 (add-hook 'compilation-mode-hook
           (lambda () (setq truncate-lines t)))
+(defun tm42/untruncate-lines (buffer msg)
+  (unless (string-match "finished" msg)
+    (toggle-truncate-lines 0)))
+(add-hook 'compilation-finish-functions 'tm42/untruncate-lines)
 
 (defun tm42/compile-to-buffer (command &optional buf comint ask)
   "Wrapper around `compile'. COMMAND is the command to execute. BUF, if non-nil, is
