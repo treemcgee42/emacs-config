@@ -248,20 +248,12 @@ This function utilizes consult."
       (setf end (eshell-end-of-output))
       (copy-region-as-kill start end))))
 
-(setq eshell-buffer-maximum-lines 10000)
-(defun tm42/truncate-eshell-buffers ()
-  "Truncates all eshell buffers"
-  (interactive)
-  (save-current-buffer
-    (dolist (buffer (buffer-list t))
-      (set-buffer buffer)
-      (when (eq major-mode 'eshell-mode)
-        (eshell-truncate-buffer)))))
-;; After being idle for 5 seconds, truncate all the eshell-buffers if
-;; needed. If this needs to be canceled, you can run `(cancel-timer
-;; tm42/eshell-truncate-timer)'
-(setq tm42/eshell-truncate-timer
-      (run-with-idle-timer 5 t #'tm42/truncate-eshell-buffers))
+(setq eshell-prompt-function
+      (lambda ()
+        (concat
+         (format-time-string "[%m/%d %H:%M] " (current-time))
+         (abbreviate-file-name (eshell/pwd))
+         " $ ")))
 
 (with-eval-after-load 'eshell
   (require 'em-smart)
