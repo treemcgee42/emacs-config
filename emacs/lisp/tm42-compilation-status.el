@@ -166,18 +166,4 @@ variable doesn't exist."
   "Major mode for viewing tm42's compilation status."
   :keymap tm42-compilation-status-map)
 
-(defun tm42/tab-bar-compilation-status ()
-  (propertize
-   (concat "Comp: "
-           (propertize (format "%d" (length tm42/compilation-status-passes))
-                       'face '(:foreground "green")
-                       'help-echo (format "%d passes" (length tm42/compilation-status-passes)))
-           " "
-           (propertize (format "%d" (length tm42/compilation-status-failures))
-                       'face '(:foreground "red")
-                       'help-echo (format "%d failures" (length tm42/compilation-status-failures))))
-   'keymap (let ((map (make-sparse-keymap)))
-             (define-key map [mouse-1] #'tm42/compilation-status)
-             map)))
-
 (provide 'tm42-compilation-status)
