@@ -102,7 +102,8 @@
 (customize-set-value 'dabbrev-case-replace nil)
 
 (with-eval-after-load 'completion-preview
-  (global-completion-preview-mode))
+  (customize-set-value 'completion-preview-idle-delay 3)
+  (add-hook 'prog-mode-hook #'completion-preview-mode))
 
 (use-package cape
   :ensure t
