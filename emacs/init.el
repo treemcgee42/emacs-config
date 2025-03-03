@@ -920,6 +920,16 @@ interactively)."
   "Color to indicate the working window is showing an unsaved buffer."
   :group 'tm42/ml/group)
 
+(use-package tm42-scrolling-elt
+  :ensure nil)
+
+(setf tm42/vc-ml-scrolling-elt
+      (make-scrolling-modeline-elt
+       (lambda ()
+         (when (boundp 'vc-mode)
+           (string-trim (substring-no-properties vc-mode))))
+       12))
+
 (setq tm42/ml/right-aligned-content
       '(""
         which-func-format))
@@ -959,7 +969,8 @@ interactively)."
 			       face tm42/ml/normal-face)
 		  (:propertize "%b" face tm42/ml/bold-face)
                   "   "
-                  (vc-mode vc-mode)
+                  ;; (vc-mode vc-mode)
+                  (:eval (tick-scrolling-modeline-elt tm42/vc-ml-scrolling-elt))
                   (:eval (tm42/ml/padding-before-right-aligned-content))
                   (:eval tm42/ml/right-aligned-content)
 		  )
