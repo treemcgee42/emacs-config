@@ -344,6 +344,16 @@ correspond to the input on the prompt above it."
 (with-eval-after-load 'project
   (add-to-list 'project-find-functions 'project-try-vc))
 
+(defun tm42/diff-mode-toggle-subtree ()
+  "Toggle the visibility of the current diff hunk or file in `diff-mode`."
+  (interactive)
+  (if (outline-invisible-p (line-end-position))
+      (outline-show-subtree)
+    (outline-hide-subtree)))
+
+(with-eval-after-load 'diff-mode
+  (define-key diff-mode-shared-map (kbd "TAB") #'tm42/diff-mode-toggle-subtree))
+
 ;; --- Tab bar ---------------------------------------------------------------------
 
 (tool-bar-mode -1)
