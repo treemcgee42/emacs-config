@@ -195,6 +195,7 @@ This function utilizes consult."
 (defun tm42/icomplete-styles ()
   (setq-local completion-styles '(orderless flex)))
 (add-hook 'icomplete-minibuffer-setup-hook 'tm42/icomplete-styles)
+(define-key global-map (kbd "C-M-v") 'switch-to-completions)
 
 (use-package expand-region
   :ensure t
