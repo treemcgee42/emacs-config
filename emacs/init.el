@@ -559,6 +559,30 @@ at once, so it's useful to have an easy way to tell which is which.")
 (when (treesit-available-p)
   (push '("\\.py\\'" . python-ts-mode) auto-mode-alist))
 
+(defun tm42/lineup-arglist-intro (langelem)
+  "Indent the first argument relative to the previous line."
+  (message "HERE")
+  (save-excursion
+    (goto-char (c-langelem-pos langelem))
+    ;; (forward-line -1)
+    (message "at line %d current indentation %d" (line-number-at-pos) (current-indentation))
+    (+ (current-indentation) c-basic-offset)))
+
+(c-add-style
+ "tm42"
+ '((c-basic-offset . 4)
+   (c-offsets-alist
+    (arglist-intro add [0] tm42/lineup-arglist-intro)
+    (arglist-close . c-lineup-arglist))))
+
+(defun tm42/c-mode-hook ()
+  (c-set-style "tm42")
+  (setq-local c-basic-offset 4))
+
+(use-package cc-mode
+  :init
+  (add-hook 'c++-mode-hook 'tm42/c-mode-hook))
+
 (message "end section LANGUAGES")
 ;; --- End languages ---------------------------------------------------------------
 
