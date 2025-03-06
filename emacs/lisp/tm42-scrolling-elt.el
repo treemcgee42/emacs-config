@@ -1,29 +1,18 @@
 ;;; tm42-scrolling-elt.el --- Helps create interactive header lines  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025
-
 ;; Author: Varun Malladi <varun.malladi@gmail.com>
-;; Keywords: maint
-
-;; This program is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
 ;; Provides text elements with fixed width that scroll over time to reveal
 ;; the full content.
 
-;;; Code:
+;;; TODOs:
+
+;; - Documentation for class.
+
+;; --- begin public api -------------------------------------------------------------
 
 (require 'eieio)
 
@@ -39,40 +28,70 @@
     :documentation "The full content that is currently being used.")
    (current-content-start-idx
     :initarg :current-content-start-idx
-    :documentation "The first character the element is showing."))
+    :documentation "The first character the element is showing.")
+   (last-tick-time
+    :initform (float-time)
+    :documentation "Last time we scrolled. Used to determine if we should scroll."))
   "Scrolling TODO")
 
-(defun make-scrolling-modeline-elt (get-content-fn width)
+(defcustom tm42/scrolling-elt-separator "  "
+  "When wrapping the scrolling element content, display this in between the start
+and the end when both are visible.")
+
+(defcustom tm42/scrolling-elt-tick-frequency 1
+  "The (minimum) number of seconds between ticks, e.g. scrolling one character.")
+
+(defun tm42/make-scrolling-modeline-elt (get-content-fn width)
   (scrolling-modeline-elt
    :get-content-fn get-content-fn
    :char-width width
-   :current-content (concat (funcall get-content-fn) "~~")
+   :current-content (concat (funcall get-content-fn) "  ")
    :current-content-start-idx 0))
 
-(cl-defmethod render-scrolling-modeline-elt ((sme scrolling-modeline-elt))
-  (cl-assert (<= (slot-value sme 'current-content-start-idx)
-                 (length (slot-value sme 'current-content))))
+(cl-defmethod tm42/tick-scrolling-modeline-elt ((sme scrolling-modeline-elt))
+  (when (--tm42/scrolling-elt/should-tick (slot-value sme 'last-tick-time))
+    (setf (slot-value sme 'last-tick-time) (float-time))
+    ;; Check if content has updated
+    (let ((new-content (concat (funcall (slot-value sme 'get-content-fn)) "  ")))
+      (when (not (string= new-content (slot-value sme 'current-content)))
+        (setf (slot-value sme 'current-content) new-content)
+        (setf (slot-value sme 'current-content-start-idx) 0)))
+    (when (> (length (slot-value sme 'current-content))
+             (slot-value sme 'char-width))
+      (setf (slot-value sme 'current-content-start-idx)
+            (mod (+ (slot-value sme 'current-content-start-idx) 1)
+                 (length (slot-value sme 'current-content))))))
+  (--tm42/scrolling-elt/render-sme sme))
+
+;; --- end public api ---------------------------------------------------------------
+;; --- begin helpers ----------------------------------------------------------------
+
+(defun --tm42/scrolling-elt/should-tick (last-tick-time)
+  "LAST-TICK-TIME should be the float-time from the last tick (e.g. the number of
+seconds since the epoch, as a float)."
+  (> (- (float-time) last-tick-time) tm42/scrolling-elt-tick-frequency))
+
+(defun --tm42/scrolling-elt/wrap-string (st width start-idx)
   (let* ((remaining-string
-          (let* ((start-idx (slot-value sme 'current-content-start-idx))
-                 (end-idx (min (length (slot-value sme 'current-content))
-                               (+ start-idx (slot-value sme 'char-width)))))
-            (substring (slot-value sme 'current-content)
-                       start-idx end-idx)))
+          (let ((end-idx (min (length st) (+ start-idx width))))
+            (substring st start-idx end-idx)))
          (wrapped-string
-          (let ((end-idx (max (- (slot-value sme 'char-width)
-                                 (length remaining-string))
+          (let ((end-idx (max (- width (length remaining-string))
                               0)))
-            (substring (slot-value sme 'current-content)
-                       0 end-idx))))
+            (substring st 0 end-idx))))
     (concat remaining-string wrapped-string)))
 
-(cl-defmethod tick-scrolling-modeline-elt ((sme scrolling-modeline-elt))
-  (let ((new-content (concat (funcall (slot-value sme 'get-content-fn)) "~~")))
-    (when (not (string= new-content (slot-value sme 'current-content)))
-      (setf (slot-value sme 'current-content) new-content)
-      (setf (slot-value sme 'current-content-start-idx) 0)))
-  (let ((rendered-output (render-scrolling-modeline-elt sme)))
-    (setf (slot-value sme 'current-content-start-idx)
-          (mod (+ (slot-value sme 'current-content-start-idx) 1)
-               (length (slot-value sme 'current-content))))
-    rendered-output))
+(cl-defmethod --tm42/scrolling-elt/render-sme ((sme scrolling-modeline-elt))
+  (cl-assert (<= (slot-value sme 'current-content-start-idx)
+                 (length (slot-value sme 'current-content))))
+  (if (<= (length (slot-value sme 'current-content))
+          (slot-value sme 'char-width))
+      (slot-value sme 'current-content)
+    (--tm42/scrolling-elt/wrap-string
+     (concat (slot-value sme 'current-content) tm42/scrolling-elt-separator)
+     (slot-value sme 'char-width)
+     (slot-value sme 'current-content-start-idx))))
+
+;; --- end helpers ------------------------------------------------------------------
+
+(provide 'tm42-scrolling-elt)

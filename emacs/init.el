@@ -935,13 +935,6 @@ interactively)."
 (use-package tm42-scrolling-elt
   :ensure nil)
 
-(setf tm42/vc-ml-scrolling-elt
-      (make-scrolling-modeline-elt
-       (lambda ()
-         (when (boundp 'vc-mode)
-           (string-trim (substring-no-properties vc-mode))))
-       12))
-
 (setq tm42/ml/right-aligned-content
       '(""
         which-func-format))
@@ -982,7 +975,17 @@ interactively)."
 		  (:propertize "%b" face tm42/ml/bold-face)
                   "   "
                   ;; (vc-mode vc-mode)
-                  (:eval (tick-scrolling-modeline-elt tm42/vc-ml-scrolling-elt))
+                  (:eval
+                   (progn
+                     (when (not (local-variable-p 'tm42/vc-ml-scrolling-elt))
+                       (setq-local
+                        tm42/vc-ml-scrolling-elt
+                        (tm42/make-scrolling-modeline-elt
+                         (lambda ()
+                           (when (and (boundp 'vc-mode) vc-mode)
+                             (string-trim (substring-no-properties vc-mode))))
+                         12)))
+                     (tm42/tick-scrolling-modeline-elt tm42/vc-ml-scrolling-elt)))
                   (:eval (tm42/ml/padding-before-right-aligned-content))
                   (:eval tm42/ml/right-aligned-content)
 		  )
