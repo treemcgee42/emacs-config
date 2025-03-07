@@ -573,7 +573,8 @@ at once, so it's useful to have an easy way to tell which is which.")
  '((c-basic-offset . 4)
    (c-offsets-alist
     (arglist-intro add [0] tm42/lineup-arglist-intro)
-    (arglist-close . c-lineup-arglist))))
+    (arglist-close . c-lineup-arglist)
+    (innamespace . [0]))))
 
 (defun tm42/c-mode-hook ()
   (c-set-style "tm42")
