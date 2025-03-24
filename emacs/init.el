@@ -343,7 +343,17 @@ correspond to the input on the prompt above it."
             :after #'vm-remove-fringe-hook-all-frames)
 
 (with-eval-after-load 'project
-  (add-to-list 'project-find-functions 'project-try-vc))
+  (add-hook 'project-find-functions #'project-try-vc))
+
+(defun tm42/vc-quick-commit ()
+  (interactive)
+  (let ((dir (vc-root-dir)))
+    (vc-dir dir)
+    ;; Buffer name logic ripped from the vc-dir source code (:
+    (with-current-buffer (vc-dir-prepare-status-buffer
+                          "*vc-dir*" dir (vc-responsible-backend dir))
+      (vc-dir-mark-state-files '(edited))
+      (vc-diff))))
 
 (defun tm42/diff-mode-toggle-subtree ()
   "Toggle the visibility of the current diff hunk or file in `diff-mode`."
