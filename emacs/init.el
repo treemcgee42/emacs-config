@@ -231,6 +231,19 @@ This function utilizes consult."
 
 ;; [[ Eshell ]]
 
+(with-eval-after-load 'em-banner
+  (customize-set-value 'eshell-banner-message ";
+;     |\\_._/|
+;     | 0 0 |
+;     (  T  )    Are we consing yet?
+;    .^`-^-'^.
+;    `.  ;  .'
+;    | | | | |
+;   ((_((|))_))
+;             hj
+;
+; Welcome to the Emacs shell.\n\n"))
+
 (defun eshell/comp (&rest args)
   "Calls `compile' interactively with the remaining arguments as the command."
   (compile (string-join args " ") t))
