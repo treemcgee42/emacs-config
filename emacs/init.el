@@ -365,6 +365,8 @@ correspond to the input on the prompt above it."
 (with-eval-after-load 'diff-mode
   (define-key diff-mode-shared-map (kbd "TAB") #'tm42/diff-mode-toggle-subtree))
 
+(global-set-key (kbd "C-x C-b") #'ibuffer)
+
 ;; --- Tab bar ---------------------------------------------------------------------
 
 (tool-bar-mode -1)
