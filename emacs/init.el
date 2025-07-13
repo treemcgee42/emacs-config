@@ -101,9 +101,10 @@
 
 (customize-set-value 'dabbrev-case-replace nil)
 
-(with-eval-after-load 'completion-preview
-  (customize-set-value 'completion-preview-idle-delay 3)
-  (add-hook 'prog-mode-hook #'completion-preview-mode))
+(when (locate-library "completion-preview")
+  (with-eval-after-load 'completion-preview
+    (customize-set-value 'completion-preview-idle-delay 3)
+    (add-hook 'prog-mode-hook #'completion-preview-mode)))
 
 (use-package cape
   :ensure t
@@ -134,7 +135,8 @@
     (advice-add #'register-preview :override #'consult-register-window)
     (setq register-preview-delay 0.5)
     (xref-show-xrefs-function #'consult-xref)
-    (xref-show-definitions-function #'consult-xref))
+    (xref-show-definitions-function #'consult-xref)
+    (completion-in-region-function #'consult-completion-in-region))
   (with-eval-after-load 'em-hist
     (bind-key "M-r" #'consult-history 'eshell-hist-mode-map))
 
@@ -248,6 +250,16 @@ This function utilizes consult."
   "Calls `compile' interactively with the remaining arguments as the command."
   (compile (string-join args " ") t))
 
+(defun eshell/out (&rest args)
+  "Run a shell command asynchronously and show its output in a temporary buffer.
+
+The output appears in the current window. Press `q` to quit the buffer and return to Eshell.
+A message will also be printed in the buffer when the command completes."
+  (let* ((buf-name "*eshell-output*")
+         (cmd (string-join args " "))
+         (default-directory (eshell/pwd)))
+      (tm42/compile-to-buffer cmd buf-name nil nil t)))
+
 (defun eshell/tm42-copy (&optional n)
   "Copy the last N eshell command and command outputs."
   (let ((start nil)
@@ -264,6 +276,16 @@ This function utilizes consult."
       (setf end (eshell-end-of-output))
       (copy-region-as-kill start end))))
 
+(defun tm42/eshell-redirect-to-temp-buffer (&rest args)
+  "Run ARGS as a command and redirect output to a temp buffer named *eshell-CMD*."
+  (let* ((cmd-name (car args))
+         (cmd-string (mapconcat #'identity args " "))
+         (buf-name (format "*eshell-%s*" cmd-name)))
+    (eshell-command (format "%s > #<buffer %s>" cmd-string buf-name))
+    (switch-to-buffer-other-window buf-name)))
+
+(defalias 'et 'tm42/eshell-redirect-to-temp-buffer)
+
 (setq eshell-prompt-function
       (lambda ()
         (concat
@@ -274,6 +296,7 @@ This function utilizes consult."
 (with-eval-after-load 'eshell
   (require 'em-smart)
   (add-to-list 'eshell-modules-list 'eshell-smart))
+  ;; (add-to-list 'eshell-visual-commands "watch"))
 
 ;; --- begin eshell smart restore command -------------------------------------------
 
@@ -327,7 +350,7 @@ correspond to the input on the prompt above it."
 
 (setq inhibit-startup-screen t)
 ;; (load-theme 'modus-vivendi)
-(load-theme 'minimal-tron t)
+(load-theme 'minimal-tron-light t)
 ;; (disable-theme 'modus-vivendi)
 
 ;; Hide title bar
@@ -389,8 +412,7 @@ correspond to the input on the prompt above it."
       (menu-bar-mode -1)
       (xterm-mouse-mode 1)))
 
-(global-hl-line-mode 1)
-(setq global-hl-line-sticky-flag t)
+(add-hook 'prog-mode-hook (lambda () (hl-line-mode 1)))
 
 ;; Honestly the menu bar is still useful-- combine it with the tab-bar.
 
@@ -412,9 +434,7 @@ displayed in the tab bar."
 
 (defvar tm42/tab-bar-compilation-provider
   (tm42/tab-bar-compilation-provider-generator
-   (rx "*compilation"
-       (optional (seq "<" digit ">"))
-       "*")
+   "compilation"
    "Compiling"))
 
 (defvar tm42/tab-bar-compilation-status-providers
@@ -432,10 +452,17 @@ if it is greater than one.")
       (pcase-let ((`(,text . ,num) (funcall provider)))
         (when (> num 0)
           (if (> num 1)
-              (push (format "%s(%d)" text num) 'items)
+              (push (format "%s(%d)" text num) items)
             (push text items)))))
     (when items
       (concat "[" (mapconcat #'identity items ", ") "]"))))
+
+(defvar tm42/workspace-name nil
+  "Name of the workspace or session. At work I have multiple Emacs instances running
+at once, so it's useful to have an easy way to tell which is which.")
+(defun tm42/set-workspace-name (name)
+  (interactive "sWorkspace name: ")
+  (setf tm42/workspace-name name))
 
 (setq tab-bar-format
       (list #'tab-bar-format-menu-bar
@@ -445,7 +472,9 @@ if it is greater than one.")
             #'tab-bar-format-add-tab
             #'tab-bar-format-align-right
             #'tm42/tab-bar-compilation-status
-            (lambda () "    ")
+            (lambda ()
+              (when tm42/workspace-name
+                (format "  [Workspace: %s]  " tm42/workspace-name)))
             #'tab-bar-format-global))
 (add-to-list 'tab-bar-format #'tab-bar-format-menu-bar)
 (setq tab-bar-menu-bar-button " π ")
@@ -455,7 +484,7 @@ if it is greater than one.")
 (add-to-list 'tab-bar-format 'tab-bar-format-global 'append)
 (setq display-time-format "%a %e %b %T")
 (setq display-time-interval 1)
-(display-time-mode)
+;; (display-time-mode -1)
 
 (defun tab-bar-tab-name-format-comfortable (tab i) (propertize (concat " " (tab-bar-tab-name-format-default tab i) " ") 'face (funcall tab-bar-tab-face-function tab)))
 (setq tab-bar-tab-name-format-function #'tab-bar-tab-name-format-comfortable)
@@ -864,7 +893,7 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
     (toggle-truncate-lines 0)))
 (add-hook 'compilation-finish-functions 'tm42/untruncate-lines)
 
-(defun tm42/compile-to-buffer (command &optional buf comint ask)
+(defun tm42/compile-to-buffer (command &optional buf comint ask use-current-window)
   "Wrapper around `compile'. COMMAND is the command to execute. BUF, if non-nil, is
 the name of the buffer to compile to. COMINT controls interactive compilation. ASK
 indicates whether the user should be prompted with the command and required to
@@ -883,7 +912,10 @@ interactively)."
             (current-prefix-arg (when comint '(1)))
             ;; When calling interactively this will fill in the default command
             ;; for the user to verify.
-            (compile-command command))
+            (compile-command command)
+            (display-buffer-overriding-action
+             (when use-current-window
+             '((display-buffer-reuse-window display-buffer-same-window)))))
     (if ask
         (call-interactively #'compile)
       (compile command comint))))
@@ -1094,10 +1126,12 @@ interactively)."
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
  '(custom-safe-themes
-   '("c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
+   '("ef4337d1a6504a8110e7b3b2f30e9b1df5cce78afa8a7a44afcc6ec7fce228e3" "c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
  '(dired-dwim-target t)
  '(dired-listing-switches "-alhv")
+ '(eat-enable-auto-line-mode t)
  '(eldoc-echo-area-use-multiline-p nil)
+ '(erc-fill-column 85)
  '(fill-column 85)
  '(grep-command "rg -nS --no-heading ''")
  '(grep-command-position 22)
@@ -1108,6 +1142,7 @@ interactively)."
  '(package-selected-packages
    '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(pylint-command "a git pylint")
+ '(scroll-conservatively 1000)
  '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
  '(show-trailing-whitespace t)
@@ -1117,6 +1152,7 @@ interactively)."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "JetBrains Mono" :foundry "nil" :slant normal :weight regular :height 160 :width normal)))))
+ '(default ((t (:family "JetBrains Mono" :foundry "nil" :slant normal :weight regular :height 160 :width normal))))
+ '(font-lock-comment-face ((t (:foreground "#5A7387" :slant normal)))))
 (put 'erase-buffer 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
