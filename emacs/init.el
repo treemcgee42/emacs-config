@@ -787,13 +787,10 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   (setq org-todo-keywords
         '((sequence "TODO(t)"
                     "STARTED(s!)"
-                    "UNLAUNCED(u!)"
-                    "LAUNCED(l!)"
-                    "OPEN REVIEW(r!)"
-                    "SHIP IT(i!)"
+                    "YOUR TURN(y!)"
+                    "THEIR TURN(w!)"
                     "|" ; Completed states
-                    "DONE(d!)"
-                    "MERGED(m!)")))
+                    "DONE(d!)")))
 
   (setq org-capture-templates
         '(("t" "Todo" entry (file "~/dev/projects/todo.org")
@@ -1142,6 +1139,7 @@ interactively)."
  '(package-selected-packages
    '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
  '(pylint-command "a git pylint")
+ '(ring-bell-function 'ignore)
  '(scroll-conservatively 1000)
  '(scroll-margin 3)
  '(scroll-preserve-screen-position 1)
@@ -1152,7 +1150,10 @@ interactively)."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "JetBrains Mono" :foundry "nil" :slant normal :weight regular :height 160 :width normal))))
- '(font-lock-comment-face ((t (:foreground "#5A7387" :slant normal)))))
+ '(default ((t (:inherit nil :extend nil :stipple nil :background "#FAFBFC" :foreground "#2A3C4B" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 200 :width normal :foundry "nil" :family "Berkeley Mono"))))
+ '(font-lock-comment-face ((t (:foreground "#5A7387" :slant normal))))
+ '(mode-line-active ((t (:inherit mode-line :box (:line-width (1 . 7) :color "#E5F0F7")))))
+ '(mode-line-inactive ((t (:background "#EDEDED" :foreground "#8AA2B0" :box (:line-width (1 . 7) :color "#EDEDED")))))
+ '(tab-bar ((t (:inherit mode-line-inactive :box nil)))))
 (put 'erase-buffer 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
