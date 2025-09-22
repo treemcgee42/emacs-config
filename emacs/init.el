@@ -350,15 +350,28 @@ correspond to the input on the prompt above it."
 
 (setq inhibit-startup-screen t)
 ;; (load-theme 'modus-vivendi)
-(load-theme 'minimal-tron-light t)
+;; (load-theme 'minimal-tron-light t)
 ;; (disable-theme 'modus-vivendi)
+(load-theme 'midnight-blue t)
+
+(defun tm42/try-setting-font ()
+  (when (window-system)
+    (let ((fonts '((:name "Berkeley Mono" :size 18))))
+      (catch 'set-custom-font
+        (dolist (font fonts)
+          (when (x-list-fonts (plist-get font :name))
+            (set-frame-font (format "%s:size=%d"
+                                    (plist-get font :name)
+                                    (plist-get font :size)))
+            (throw 'set-custom-font t)))))))
+(tm42/try-setting-font)
 
 ;; Hide title bar
-;; (add-to-list 'default-frame-alist '(undecorated . t))
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(undecorated-round . t))
+;; (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 ;; Hides the buffer name and icon from the title bar.
-(setq ns-use-proxy-icon nil)
-(setq frame-title-format nil)
+;; (setq ns-use-proxy-icon nil)
+;; (setq frame-title-format nil)
 
 (if (boundp 'scroll-bar-mode)
     (scroll-bar-mode -1))
@@ -477,7 +490,7 @@ at once, so it's useful to have an easy way to tell which is which.")
                 (format "  [Workspace: %s]  " tm42/workspace-name)))
             #'tab-bar-format-global))
 (add-to-list 'tab-bar-format #'tab-bar-format-menu-bar)
-(setq tab-bar-menu-bar-button " π ")
+(setq tab-bar-menu-bar-button " MENU ")
 ;; Clock
 (setenv "TZ" "America/New_York")
 (add-to-list 'tab-bar-format 'tab-bar-format-align-right 'append)
@@ -1148,7 +1161,48 @@ interactively)."
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
  '(custom-safe-themes
-   '("ef4337d1a6504a8110e7b3b2f30e9b1df5cce78afa8a7a44afcc6ec7fce228e3" "c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc" "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9" "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071" "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944" "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d" "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763" "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d" "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb" "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d" "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1" "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939" "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b" "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548" "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c" "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83" "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8" "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d" "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0" "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc" "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
+   '("9c86be6c9350a29b5c501b75807cf8fe4c1613c4e872f4292cb17b0250dbb4da"
+     "a2b03445bed83c9c31d251d6d11d7281c96d9660466e2f5639a265139590116d"
+     "c1ff31fd71c538d48a4fc518c7a6a7d3f5316fd32a5a0087526d2854300ab53f"
+     "7f6e8064b32e057d95926964bde930a4e94c02be64b445144a13cbfb48885376"
+     "e2698fa924606a0cf98f3a996694a9935b50a7e0dd9cce9da25895549d95c323"
+     "e6bce10d0f4c20a084c4bca29711bdbad2c73a2f2f30549433f9ced57a10d7a0"
+     "b78cfa06e1be91f0180c3495382ab64d02a348eff22ec7ff82d664b91f354247"
+     "1e965933e9f08cee5d3a098b97dc0da9501aa58a2636a5dbaae3da302eb55785"
+     "c36e5801ff12a5ee8a2cba0a216e8cf0f3b1a0684099ba440a26ad998153fa1f"
+     "9dcff2fc7f2c9851395a1d1dc5fc1d89fab39be865de21be72a5c7b858ef43df"
+     "115e2a24ad99acbb0d8eeb93f94c8750f8b11da45a6a231f9d0539037e4e880f"
+     "45349f28dd3a220d2581dc028c16ce77c5192248d13649d0b8ab8b16db398bb4"
+     "cdc4fc8b539f26f9165fbad25b39fd1ba1e8375178a17abece2e49fc116bb73e"
+     "01557ca348baa22c785d03cda158632b974b040d1746efbc9eec1ec0f4b38c54"
+     "476c13c6bd1b37b167ca3aa49dad36b63a6b2f63df6adb229436f3da9234032a"
+     "63b4674469559674cd0814ca0b32401050b89fdc1cec3d44e228df604e948c85"
+     "c9a751f5f9bb093365bdc31b22f8a4ee7a7424f94fb08de077eb0e45a5f5ab30"
+     "1b90daf9831e4933c7c4a64356f268ca707869c770ef35884579e5f4ab002a9e"
+     "1903ce225b58e43dccd949d8dd25f6022a8c38c826cbf6e48b975a3a07741d6b"
+     "fab00e907d734d3544e24b3a71af6c661a6304ca755b2b39a5832fcda3dcb831"
+     "97dc97d2b281412d45b4ba7afb388a17c3beaac0a6455ecade4ecb2b46bb24a0"
+     "ef4337d1a6504a8110e7b3b2f30e9b1df5cce78afa8a7a44afcc6ec7fce228e3"
+     "c43813c439df1a3d5d373b7d91f628caffcb4ecdb908e562200a7b061e6e4cbc"
+     "b1b5502bc64071b2e263ecfcb01bd1d784497c795c61c2cb6de4a3f459a91da9"
+     "4c22e0a991f91a6a166699a8f267112934478db6592977c74926173f7f6c8071"
+     "6072798c95eeda3719f455590248f2a641c440418cad564f0853d91ad7641944"
+     "724ec1789ab57edf52040cf39280c0e09e2a8f0b0556695569e5ba3986fc183d"
+     "6cd3c963db7aa40c9c0abf5caa923c4205a885fe583f4fd1c33e722b3535a763"
+     "0b08daef5c9b853c1bf82a0797bcd8d4d333be2dbe7aba402064a9653196991d"
+     "d5b6892dabfa54f659918326e459dcc3f4851724759063c1ff2c3e43c734b6cb"
+     "2d405365e4edaf423465d961b8bcc09f4d280af05ab0319924f7017c1fcf136d"
+     "3a65dffab04340599fb2daf6e8db5349f65b9c0403a3b98b5927442ca97c16b1"
+     "4ce77ae7163893c4dd8629d00aa7a26013b680e4be59021e2d2a80544ab34939"
+     "998c811d828dbc02eff645e633dfcc90e02ebdad9558a457e622be1335de211b"
+     "19aca151c4a38aefee68109e6701d2555fadd987cbf12e7d90b5af4e66d89548"
+     "6538d61c331f93f2089e5e53141798ca954e2dd4eb43e773b288c0d15ffc8d6c"
+     "fe08a51edfb96058e164f2c013a2b17a6114aaf6c6dc7fc6ce28df4736a46c83"
+     "6a18e904da7918d42a6d9bc1d6936b13fc48763e3dc87e0df87a3ed893b6b7b8"
+     "fa09c11029549fc9ae9088772034aae80ec3d91c25b09e58f23a2ae30435406d"
+     "c6a3b79fbe9462a6f057d941a959e71d3945158424fc05ec46204d58e2d182a0"
+     "821c37a78c8ddf7d0e70f0a7ca44d96255da54e613aa82ff861fe5942d3f1efc"
+     "835d934a930142d408a50b27ed371ba3a9c5a30286297743b0d488e94b225c5f" default))
  '(dired-dwim-target t)
  '(dired-listing-switches "-alhv")
  '(eat-enable-auto-line-mode t)
@@ -1162,7 +1216,12 @@ interactively)."
  '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
  '(package-selected-packages
-   '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf font-lock-studio cape corfu-terminal corfu clipetty rg acme-theme ace-window git-gutter tm42-buffer-groups expand-region org-roam avy move-text multiple-cursors zig-mode orderless consult marginalia vertico vterm xcscope magit))
+   '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf
+                                font-lock-studio cape corfu-terminal corfu clipetty
+                                rg acme-theme ace-window git-gutter
+                                tm42-buffer-groups expand-region org-roam avy
+                                move-text multiple-cursors zig-mode orderless consult
+                                marginalia vertico vterm xcscope magit))
  '(pylint-command "a git pylint")
  '(ring-bell-function 'ignore)
  '(scroll-conservatively 1000)
@@ -1170,15 +1229,22 @@ interactively)."
  '(scroll-preserve-screen-position 1)
  '(show-trailing-whitespace t)
  '(tool-bar-mode nil))
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(default ((t (:inherit nil :extend nil :stipple nil :background "#FAFBFC" :foreground "#2A3C4B" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 200 :width normal :foundry "nil" :family "Berkeley Mono"))))
+;;  '(font-lock-comment-face ((t (:foreground "#5A7387" :slant normal))))
+;;  '(mode-line-active ((t (:inherit mode-line :box (:line-width (1 . 7) :color "#E5F0F7")))))
+;;  '(mode-line-inactive ((t (:background "#EDEDED" :foreground "#8AA2B0" :box (:line-width (1 . 7) :color "#EDEDED")))))
+;;  '(tab-bar ((t (:inherit mode-line-inactive :box nil))))
+;;  '(tab-bar-tab ((t (:inherit mode-line :box (:line-width (1 . 7) :color "#E5F0F7" :style flat-button))))))
+(put 'erase-buffer 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :extend nil :stipple nil :background "#FAFBFC" :foreground "#2A3C4B" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 200 :width normal :foundry "nil" :family "Berkeley Mono"))))
- '(font-lock-comment-face ((t (:foreground "#5A7387" :slant normal))))
- '(mode-line-active ((t (:inherit mode-line :box (:line-width (1 . 7) :color "#E5F0F7")))))
- '(mode-line-inactive ((t (:background "#EDEDED" :foreground "#8AA2B0" :box (:line-width (1 . 7) :color "#EDEDED")))))
- '(tab-bar ((t (:inherit mode-line-inactive :box nil)))))
-(put 'erase-buffer 'disabled nil)
-(put 'narrow-to-region 'disabled nil)
+ )
