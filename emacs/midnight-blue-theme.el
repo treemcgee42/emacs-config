@@ -68,7 +68,10 @@
  `(fringe ((t (:inherit default))) t)
 
  ;; --- CURSOR
- '(highlight ((t nil)) t)
+ `(highlight ((t (:background
+                  ,tm42-midnight-blue/white
+                  :foreground ,tm42-midnight-blue/midnight)))
+             t)
  `(region ((t (:background
                ,tm42-midnight-blue/white
                :foreground ,tm42-midnight-blue/midnight)))
@@ -101,6 +104,7 @@
  '(font-lock-comment-face ((t (:inherit default :foreground "#01354a"))) t)
  ;; Heading-likes:
  `(font-lock-function-name-face ,(custom-face-get-current-spec 'tm42-midnight-blue/inverted-face) t)
+ `(eshell-prompt ,(custom-face-get-current-spec 'tm42-midnight-blue/inverted-face) t)
  ;; PL structure:
  '(font-lock-keyword-face ((t (:inherit default :foreground "#6cc8eb"))) t)
  '(font-lock-builtin-face ((t (:inherit font-lock-keyword-face))) t)
@@ -113,7 +117,30 @@
  '(font-lock-constant-face ((t (:inherit default))) t)
 
  ;; --- ORG
- `(org-level-1 ,(custom-face-get-current-spec 'tm42-midnight-blue/inverted-face) t))
+ `(org-level-1 ,(custom-face-get-current-spec 'tm42-midnight-blue/inverted-face) t)
+
+ ;; --- DIFF / EDIFF
+ ;; Base diff colors - subtle, low-contrast backgrounds
+ '(diff-added ((t (:background "#002a1a" :foreground unspecified))) t)
+ '(diff-removed ((t (:background "#2a0a0a" :foreground unspecified))) t)
+ '(diff-changed ((t (:background "#1a1a2a" :foreground unspecified))) t)
+ '(diff-refine-added ((t (:background "#007a4a" :foreground unspecified))) t)
+ '(diff-refine-removed ((t (:background "#7a2a2a" :foreground unspecified))) t)
+ '(diff-refine-changed ((t (:background "#3a3a6a" :foreground unspecified))) t)
+
+ ;; Ediff faces - consistent with diff
+ '(ediff-current-diff-A ((t (:background "#2a0a0a" :foreground unspecified))) t)
+ '(ediff-current-diff-B ((t (:background "#002a1a" :foreground unspecified))) t)
+ '(ediff-current-diff-C ((t (:background "#1a1a2a" :foreground unspecified))) t)
+ '(ediff-fine-diff-A ((t (:background "#7a2a2a" :foreground unspecified))) t)
+ '(ediff-fine-diff-B ((t (:background "#007a4a" :foreground unspecified))) t)
+ '(ediff-fine-diff-C ((t (:background "#3a3a6a" :foreground unspecified))) t)
+ '(ediff-even-diff-A ((t (:background "#0a0a0a" :foreground unspecified))) t)
+ '(ediff-even-diff-B ((t (:background "#0a0a0a" :foreground unspecified))) t)
+ '(ediff-even-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t)
+ '(ediff-odd-diff-A ((t (:background "#0a0a0a" :foreground unspecified))) t)
+ '(ediff-odd-diff-B ((t (:background "#0a0a0a" :foreground unspecified))) t)
+ '(ediff-odd-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t))
 
 (provide-theme 'midnight-blue)
 

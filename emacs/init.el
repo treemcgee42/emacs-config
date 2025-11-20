@@ -25,14 +25,13 @@
 (push "~/.config/emacs/lisp" load-path)
 (push "~/.config/emacs/themes" load-path)
 
-
-;; Install Elpaca
-(defvar elpaca-installer-version 0.7)
+;; Install elpaca
+(defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil :depth 1
+                              :ref nil :depth 1 :inherit ignore
                               :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                               :build (:not elpaca--activate-package)))
 (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
@@ -42,27 +41,27 @@
   (add-to-list 'load-path (if (file-exists-p build) build repo))
   (unless (file-exists-p repo)
     (make-directory repo t)
-    (when (< emacs-major-version 28) (require 'subr-x))
+    (when (<= emacs-major-version 28) (require 'subr-x))
     (condition-case-unless-debug err
-        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                 ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                 ,@(when-let ((depth (plist-get order :depth)))
-                                                     (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                 ,(plist-get order :repo) ,repo))))
-                 ((zerop (call-process "git" nil buffer t "checkout"
-                                       (or (plist-get order :ref) "--"))))
-                 (emacs (concat invocation-directory invocation-name))
-                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                 ((require 'elpaca))
-                 ((elpaca-generate-autoloads "elpaca" repo)))
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                  ,@(when-let* ((depth (plist-get order :depth)))
+                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                  ,(plist-get order :repo) ,repo))))
+                  ((zerop (call-process "git" nil buffer t "checkout"
+                                        (or (plist-get order :ref) "--"))))
+                  (emacs (concat invocation-directory invocation-name))
+                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                  ((require 'elpaca))
+                  ((elpaca-generate-autoloads "elpaca" repo)))
             (progn (message "%s" (buffer-string)) (kill-buffer buffer))
           (error "%s" (with-current-buffer buffer (buffer-string))))
       ((error) (warn "%s" err) (delete-directory repo 'recursive))))
   (unless (require 'elpaca-autoloads nil t)
     (require 'elpaca)
     (elpaca-generate-autoloads "elpaca" repo)
-    (load "./elpaca-autoloads")))
+    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
 (add-hook 'after-init-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
@@ -84,20 +83,23 @@
             (dolist (envvar with-editor-envvars)
               (add-hook hook (apply-partially 'with-editor-export-editor envvar)))))
 
-(tm42/init-section "Magit"
-  ;; Magit requires a higher version of seq then installed on older emacs versions,
-  ;; this workaround is from https://github.com/progfolio/elpaca/issues/216
-  (defun +elpaca-unload-seq (e)
-    (and (featurep 'seq) (unload-feature 'seq t))
-    (elpaca--continue-build e))
-  (defun +elpaca-seq-build-steps ()
-    (append (butlast (if (file-exists-p (expand-file-name "seq" elpaca-builds-directory))
-			 elpaca--pre-built-steps elpaca-build-steps))
-            (list '+elpaca-unload-seq 'elpaca--activate-package)))
-  ;; (elpaca `(seq :build ,(+elpaca-seq-build-steps)))
-  (use-package magit
-    :after seq
-    :ensure t))
+(elpaca 'transient)
+;; (elpaca (magit :branch "main" :pre-build ("make" "info")))
+(elpaca 'magit :after 'transient)
+;; (tm42/init-section "Magit"
+;;   ;; Magit requires a higher version of seq then installed on older emacs versions,
+;;   ;; this workaround is from https://github.com/progfolio/elpaca/issues/216
+;;   ;; (defun +elpaca-unload-seq (e)
+;;   ;;   (and (featurep 'seq) (unload-feature 'seq t))
+;;   ;;   (elpaca--continue-build e))
+;;   ;; (defun +elpaca-seq-build-steps ()
+;;   ;;   (append (butlast (if (file-exists-p (expand-file-name "seq" elpaca-builds-directory))
+;;   ;;       		 elpaca--pre-built-steps elpaca-build-steps))
+;;   ;;           (list '+elpaca-unload-seq 'elpaca--activate-package)))
+;;   ;; (elpaca `(seq :build ,(+elpaca-seq-build-steps)))
+;;   (use-package magit
+;;     :after seq
+;;     :ensure t))
 
 (customize-set-value 'dabbrev-case-replace nil)
 
@@ -227,9 +229,6 @@ This function utilizes consult."
             (push (vector meta-prefix-char ?#) eat-semi-char-non-bound-keys)
             (eat-update-semi-char-mode-map)
             (eat-reload)))
-
-(use-package rg
-  :ensure t)
 
 ;; [[ Eshell ]]
 
@@ -425,7 +424,7 @@ correspond to the input on the prompt above it."
       (menu-bar-mode -1)
       (xterm-mouse-mode 1)))
 
-(add-hook 'prog-mode-hook (lambda () (hl-line-mode 1)))
+;; (add-hook 'prog-mode-hook (lambda () (hl-line-mode 1)))
 
 ;; Honestly the menu bar is still useful-- combine it with the tab-bar.
 
@@ -558,6 +557,31 @@ at once, so it's useful to have an easy way to tell which is which.")
           'disable-show-trailing-whitespace)
 (add-hook 'comint-mode-hook
           'disable-show-trailing-whitespace)
+
+(defun tm42/highlight-region (beg end &optional face)
+  "Highlight region from BEG to END with FACE (default: 'highlight)."
+  (interactive "r")
+  (let ((ov (make-overlay beg end)))
+    (overlay-put ov 'category 'tm42-highlight-region)
+    (overlay-put ov 'face (or face 'highlight))
+    (overlay-put ov 'evaporate t) ; remove when text deleted
+    (deactivate-mark)
+    ov))
+
+(defun tm42/unhighlight-region (beg end)
+  "Unhighlight everything in the region from BEG to END. If BEG and
+END are nil, or this is called interactively with the prefix
+argument, unhighlight all regions in the buffer."
+  (interactive
+   (cond
+    (current-prefix-arg
+     (list nil nil))
+    ((use-region-p)
+     (list (region-beginning) (region-end)))
+    (t
+     (list (point) (+ (point) 1)))))
+  (remove-overlays beg end 'category 'tm42-highlight-region)
+  (deactivate-mark))
 
 (message "end section MISC")
 
@@ -887,46 +911,40 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
   (add-hook 'compilation-filter-hook 'comint-truncate-buffer)
   (setq comint-buffer-maximum-size size))
 
-(defun vm-compilation-buffer-location-hook ()
-  "Determines where the compilation buffer should pop up."
-  (message "Running compilation hook")
-  ;; The first condition in the `and` checks if the buffer being
-  ;; opened in compilation mode is exactly the usual compilation
-  ;; buffer. This is necessary because, e.g., the grep buffer also
-  ;; uses compilation mode.
-  (when (and (string= "*compilation*" (buffer-name))
-             (not (get-buffer-window "*compilation*"))
-             (not display-buffer-overriding-action))
-    (save-selected-window
-      (save-excursion
-        (let* ((w (split-window-vertically))
-               (h (window-height w))
-               (compilation-window-height 10))
-          (select-window w)
-          (switch-to-buffer "*compilation*")
-          (shrink-window (- h compilation-window-height)))))))
-(add-hook 'compilation-mode-hook 'vm-compilation-buffer-location-hook)
+;; (defun tm42-switch-to-compilation-buffer-on-failure (buffer msg)
+;;   "Switch to the compilation buffer if the compilation fails."
+;;   ; This is admittedly not the best heuristic to detect compilation
+;;   ; failure.
+;;   (unless (string-match "finished" msg)
+;;     (let ((buffer-win (get-buffer-window buffer t)))
+;;       (when buffer-win
+;;         (select-window buffer-win)
+;;         (goto-char (point-min))
+;;         (compilation-next-error 1)))))
 
-(defun tm42-switch-to-compilation-buffer-on-failure (buffer msg)
-  "Switch to the compilation buffer if the compilation fails."
-  ; This is admittedly not the best heuristic to detect compilation
-  ; failure.
-  (unless (string-match "finished" msg)
-    (let ((buffer-win (get-buffer-window buffer t)))
-      (when buffer-win
-        (select-window buffer-win)
-        (goto-char (point-min))
-        (compilation-next-error 1)))))
+;; (add-hook 'compilation-finish-functions
+;;           'tm42-switch-to-compilation-buffer-on-failure)
 
-(add-hook 'compilation-finish-functions
-          'tm42-switch-to-compilation-buffer-on-failure)
+;; (add-hook 'compilation-mode-hook
+;;           (lambda () (setq truncate-lines t)))
+;; (defun tm42/untruncate-lines (buffer msg)
+;;   (unless (string-match "finished" msg)
+;;     (toggle-truncate-lines 0)))
+;; (add-hook 'compilation-finish-functions 'tm42/untruncate-lines)
 
-(add-hook 'compilation-mode-hook
-          (lambda () (setq truncate-lines t)))
-(defun tm42/untruncate-lines (buffer msg)
-  (unless (string-match "finished" msg)
-    (toggle-truncate-lines 0)))
-(add-hook 'compilation-finish-functions 'tm42/untruncate-lines)
+(add-hook 'compilation-mode-hook (lambda () (setq truncate-lines t)))
+
+(defun tm42/compilation-watch-for-errors ()
+  "Check for errors during compilation and untruncate if found."
+  ;; Only proceed if we are currently truncating
+  (when truncate-lines
+    ;; compilation-num-errors-found was added in Emacs 28.1.
+    ;; For older versions, you might need to rely on different checks.
+    (when (and (boundp 'compilation-num-errors-found)
+               (> compilation-num-errors-found 0))
+      (toggle-truncate-lines 0))))
+
+(add-hook 'compilation-filter-hook #'tm42/compilation-watch-for-errors)
 
 (defun tm42/compile-to-buffer (command &optional buf comint ask use-current-window)
   "Wrapper around `compile'. COMMAND is the command to execute. BUF, if non-nil, is
@@ -1161,7 +1179,12 @@ interactively)."
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
  '(custom-safe-themes
-   '("9c86be6c9350a29b5c501b75807cf8fe4c1613c4e872f4292cb17b0250dbb4da"
+   '("ad0465087f5526ebcb1e34df6e9e002371a61d89442318338873e82667a9ab59"
+     "e7cb37c1321fdf73b972ac6dfa1ea5e1362bead6fef5a3e8a541a7428e5c3944"
+     "7cb40143bcb68c58ab9bdf05f2f17e2e04a2fbf424e66ae45d2f6aba9e4f48ee"
+     "7530a0159c212a1cdafc10928ea3cce791f977444148a57e1faa3df7104237ba"
+     "22e70f2ef51a81fdbe4c3d4c15c3e55bb5500ced14bac7e34e9afb42a0d857c0"
+     "9c86be6c9350a29b5c501b75807cf8fe4c1613c4e872f4292cb17b0250dbb4da"
      "a2b03445bed83c9c31d251d6d11d7281c96d9660466e2f5639a265139590116d"
      "c1ff31fd71c538d48a4fc518c7a6a7d3f5316fd32a5a0087526d2854300ab53f"
      "7f6e8064b32e057d95926964bde930a4e94c02be64b445144a13cbfb48885376"
@@ -1215,13 +1238,14 @@ interactively)."
  '(indent-tabs-mode nil)
  '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
+ '(package-install-upgrade-built-in t t)
  '(package-selected-packages
-   '(highlight-escape-sequences which-key eglot yaml-mode markdown-mode vlf
-                                font-lock-studio cape corfu-terminal corfu clipetty
-                                rg acme-theme ace-window git-gutter
-                                tm42-buffer-groups expand-region org-roam avy
-                                move-text multiple-cursors zig-mode orderless consult
-                                marginalia vertico vterm xcscope magit))
+   '(ace-window acme-theme avy cape clipetty cond-let consult corfu corfu-terminal eglot
+                expand-region flymake font-lock-studio git-gutter
+                highlight-escape-sequences idlwave magit marginalia markdown-mode
+                move-text multiple-cursors orderless org org-roam python
+                tm42-buffer-groups track-changes tramp transient verilog-mode vertico
+                vlf vterm which-key window-tool-bar xcscope yaml-mode zig-mode))
  '(pylint-command "a git pylint")
  '(ring-bell-function 'ignore)
  '(scroll-conservatively 1000)
