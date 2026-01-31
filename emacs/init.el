@@ -415,6 +415,25 @@ correspond to the input on the prompt above it."
 
 (global-set-key (kbd "C-x C-b") #'ibuffer)
 
+;; --- Display rules ---------------------------------------------------------------
+
+(require 'tm42-display-rules)
+
+(tm42-install-display-rules-cleanly)
+
+(defun tm42/focus-side-window ()
+  "Select the first visible side window."
+  (interactive)
+  (let ((side
+         (seq-find
+          (lambda (w) (window-parameter w 'window-side))
+          (window-list))))
+    (if side
+        (select-window side)
+      (user-error "No side window visible"))))
+
+(global-set-key (kbd "C-x w o") #'tm42/focus-side-window)
+
 ;; --- Tab bar ---------------------------------------------------------------------
 
 (tool-bar-mode -1)
@@ -551,6 +570,8 @@ at once, so it's useful to have an easy way to tell which is which.")
 (defun disable-show-trailing-whitespace ()
   (interactive)
   (setq show-trailing-whitespace nil))
+(add-hook 'eat-mode-hook
+          'disable-show-trailing-whitespace)
 (add-hook 'eshell-mode-hook
           'disable-show-trailing-whitespace)
 (add-hook 'compilation-mode-hook
@@ -896,6 +917,10 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
         (kill-new markdown))))
   )
 
+;; Yeah I'm putting md in the org mode section, sue me.
+
+(elpaca 'markdown-mode)
+
 ;; [[ dumb grep ]]
 
 (use-package tm42-dumbgrep
@@ -1043,9 +1068,6 @@ interactively)."
   "Color to indicate the working window is showing an unsaved buffer."
   :group 'tm42/ml/group)
 
-(use-package tm42-scrolling-elt
-  :ensure nil)
-
 (setq tm42/ml/right-aligned-content
       '(""
         which-func-format))
@@ -1085,18 +1107,8 @@ interactively)."
 			       face tm42/ml/normal-face)
 		  (:propertize "%b" face tm42/ml/bold-face)
                   "   "
-                  ;; (vc-mode vc-mode)
-                  (:eval
-                   (progn
-                     (when (not (local-variable-p 'tm42/vc-ml-scrolling-elt))
-                       (setq-local
-                        tm42/vc-ml-scrolling-elt
-                        (tm42/make-scrolling-modeline-elt
-                         (lambda ()
-                           (when (and (boundp 'vc-mode) vc-mode)
-                             (string-trim (substring-no-properties vc-mode))))
-                         12)))
-                     (tm42/tick-scrolling-modeline-elt tm42/vc-ml-scrolling-elt)))
+                  (vc-mode vc-mode)
+
                   (:eval (tm42/ml/padding-before-right-aligned-content))
                   (:eval tm42/ml/right-aligned-content)
 		  )
