@@ -415,24 +415,43 @@ correspond to the input on the prompt above it."
 
 (global-set-key (kbd "C-x C-b") #'ibuffer)
 
+(elpaca 'imenu-list)
+
 ;; --- Display rules ---------------------------------------------------------------
 
 (require 'tm42-display-rules)
 
 (tm42-install-display-rules-cleanly)
 
-(defun tm42/focus-side-window ()
-  "Select the first visible side window."
+(defun tm42/cycle-side-windows ()
+  "Cycle through side windows only. 
+If the current window isn't a side window, jump to the first available one."
   (interactive)
-  (let ((side
-         (seq-find
-          (lambda (w) (window-parameter w 'window-side))
-          (window-list))))
-    (if side
-        (select-window side)
-      (user-error "No side window visible"))))
+  (let* ((all-windows (window-list))
+         (side-windows (seq-filter (lambda (w) (window-parameter w 'window-side))
+                                   all-windows)))
+    (cond
+     ((null side-windows)
+      (user-error "No side windows visible"))
+     ;; If we are already in a side window, find the next one in the list
+     ((memq (selected-window) side-windows)
+      (let* ((next-wins (cdr (memq (selected-window) side-windows)))
+             (target (if next-wins (car next-wins) (car side-windows))))
+        (select-window target)))
+     ;; If we are in a regular window, just jump to the first side window
+     (t
+      (select-window (car side-windows))))))
 
-(global-set-key (kbd "C-x w o") #'tm42/focus-side-window)
+(global-set-key (kbd "C-x w o") #'tm42/cycle-side-windows)
+
+(defvar side-window-repeat-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "o" #'tm42/cycle-side-windows)
+    map)
+  "Keymap for repeating side window navigation.")
+
+;; Put the 'repeat-map' property on the command
+(put #'tm42/cycle-side-windows 'repeat-map 'side-window-repeat-map)
 
 ;; --- Tab bar ---------------------------------------------------------------------
 
@@ -854,31 +873,6 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 ;; [[ Org mode ]]
 
 (with-eval-after-load 'org
-  (defun get-org-agenda-files ()
-    (let* ((project-umbrella-dir "~/dev/projects")
-           (project-dirs
-            (seq-filter #'file-directory-p
-                        (directory-files project-umbrella-dir t directory-files-no-dot-files-regexp t)))
-           (top-level-project-org-files
-            (apply #'append
-                   (mapcar (lambda (dir)
-                             (directory-files dir t "\\.org$" t))
-                           project-dirs))))
-      (append '("~/dev/projects/todo.org") top-level-project-org-files)))
-  (setq org-agenda-files (get-org-agenda-files))
-
-  (setq org-todo-keywords
-        '((sequence "TODO(t)"
-                    "STARTED(s!)"
-                    "YOUR TURN(y!)"
-                    "THEIR TURN(w!)"
-                    "|" ; Completed states
-                    "DONE(d!)")))
-
-  (setq org-capture-templates
-        '(("t" "Todo" entry (file "~/dev/projects/todo.org")
-           "* TODO %?")))
-
   ;; Default keybinding C-c C-, is not recognized in the terminal.
   (define-key org-mode-map (kbd "C-c ,") #'org-insert-structure-template)
   ;; C-c ; is used by avy.
@@ -915,6 +909,8 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
 	     (markdown (org-export-string-as
                         region 'md t '(:with-toc nil))))
         (kill-new markdown))))
+
+  (require 'tm42-agenda)
   )
 
 ;; Yeah I'm putting md in the org mode section, sue me.
@@ -1183,6 +1179,8 @@ interactively)."
             (message "Emacs started in %.3f seconds" (float-time (time-subtract (current-time) before-init-time)))
             (message "- emacs-init-time: %s" (emacs-init-time))))
 
+(require 'tm42-keys)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -1191,7 +1189,9 @@ interactively)."
  '(a4-enable-default-bindings nil)
  '(column-number-mode t)
  '(custom-safe-themes
-   '("ad0465087f5526ebcb1e34df6e9e002371a61d89442318338873e82667a9ab59"
+   '("1eec7574813ad359dfa482b81026f3c784bceae0a882dca36aefb8edcdd49d4f"
+     "05972b91e4fca50c1d8e7896885be2d72cb506f5d50755896dc42b71c71ef4af"
+     "ad0465087f5526ebcb1e34df6e9e002371a61d89442318338873e82667a9ab59"
      "e7cb37c1321fdf73b972ac6dfa1ea5e1362bead6fef5a3e8a541a7428e5c3944"
      "7cb40143bcb68c58ab9bdf05f2f17e2e04a2fbf424e66ae45d2f6aba9e4f48ee"
      "7530a0159c212a1cdafc10928ea3cce791f977444148a57e1faa3df7104237ba"

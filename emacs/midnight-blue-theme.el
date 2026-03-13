@@ -115,6 +115,7 @@
  '(font-lock-variable-name-face ((t :inherit default)) t)
  '(font-lock-type-face ((t (:inherit default))) t)
  '(font-lock-constant-face ((t (:inherit default))) t)
+ `(font-lock-property-name-face ((t (:inherit font-lock-punctuation-face))) t)
 
  ;; --- ORG
  `(org-level-1 ,(custom-face-get-current-spec 'tm42-midnight-blue/inverted-face) t)
