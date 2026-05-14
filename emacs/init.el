@@ -347,6 +347,12 @@ correspond to the input on the prompt above it."
 
 ;; [[ Misc ]]
 
+(customize-set-variable 'whitespace-style
+                        '(face
+                          spaces space-mark
+                          trailing))
+(add-hook 'prog-mode-hook 'whitespace-mode)
+
 (setq inhibit-startup-screen t)
 ;; (load-theme 'modus-vivendi)
 ;; (load-theme 'minimal-tron-light t)

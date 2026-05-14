@@ -141,7 +141,10 @@
  '(ediff-even-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t)
  '(ediff-odd-diff-A ((t (:background "#0a0a0a" :foreground unspecified))) t)
  '(ediff-odd-diff-B ((t (:background "#0a0a0a" :foreground unspecified))) t)
- '(ediff-odd-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t))
+ '(ediff-odd-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t)
+
+ ;; --- Whitespace
+ '(whitespace-space ((t :foreground "color-236"))))
 
 (provide-theme 'midnight-blue)
 
