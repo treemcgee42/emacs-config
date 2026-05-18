@@ -234,10 +234,21 @@ This function utilizes consult."
   :ensure t
   :config
   (customize-set-variable 'ghostel-readonly-fast-exit nil)
+  ;; For some reason `ghostel-keymap-exceptions' doesn't work. We have to do this
+  ;; workaround.
+  (customize-set-variable
+   'ghostel-semi-char-mode-map
+   (let ((new-keymap ghostel-semi-char-mode-map))
+     (keymap-unset new-keymap "<f1>")
+     (keymap-unset new-keymap "<f2>")
+     (keymap-unset new-keymap "C-g")
+     new-keymap))
+  ;; I know I just said this doesn't work, but we'll keep it here because it's
+  ;; harmless and indicates what we should do, if we want to try again down the line.
   (customize-set-variable
    'ghostel-keymap-exceptions
    '("C-c" "C-x" "C-u" "C-h" "M-x" "M-o" "M-:" "C-\\" ;; defaults
-     "<f1>" "<f2>")))
+     "C-g" "<f1>" "<f2>" 'f1 'f2)))
 
 ;; [[ Eshell ]]
 
