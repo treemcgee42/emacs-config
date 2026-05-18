@@ -202,10 +202,10 @@ This function utilizes consult."
 (define-key global-map (kbd "C-M-v") 'switch-to-completions)
 (define-key icomplete-fido-mode-map (kbd "TAB") #'icomplete-force-complete)
 
-(use-package expand-region
+(use-package expreg
   :ensure t
-  :bind (("C-=" . er/expand-region)
-         ("C-\\" . er/expand-region)))
+  :bind (("C-=" . expreg-expand)
+         ("C--" . expreg-contract)))
 
 ;; Colors in compilation buffer.
 (use-package ansi-color
