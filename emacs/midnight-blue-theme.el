@@ -144,7 +144,7 @@
  '(ediff-odd-diff-C ((t (:background "#0a0a0a" :foreground unspecified))) t)
 
  ;; --- Whitespace
- '(whitespace-space ((t :foreground "#1a1a1a"))))
+ '(whitespace-space ((t :foreground "#303030"))))
 
 (provide-theme 'midnight-blue)
 
