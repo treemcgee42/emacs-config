@@ -73,14 +73,21 @@
    "+daily"             ;; match headings with the tag
    'agenda))            ;; search all agenda files
 
-(defun tm42/agenda/archive-done-tasks-in-file ()
-  "Archive all DONE tasks in the current Org file."
-  (interactive)
+(defun tm42/agenda/--archive-tasks-in-file (match)
   (org-map-entries
    (lambda ()
      (org-archive-subtree)
      (setq org-map-continue-from (outline-previous-heading)))
-   "/DONE" 'file))
+   match 'file))
+
+(defun tm42/agenda/archive-all-tasks-in-file ()
+  (interactive)
+  (tm42/agenda/--archive-tasks-in-file t))
+
+(defun tm42/agenda/archive-done-tasks-in-file ()
+  "Archive all DONE tasks in the current Org file."
+  (interactive)
+  (tm42/agenda/--archive-tasks-in-file "/DONE"))
 
 (defun tm42/agenda/archive-all-done-tasks ()
   "Archive all DONE tasks in all `org-agenda-files`."
