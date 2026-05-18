@@ -230,6 +230,15 @@ This function utilizes consult."
             (eat-update-semi-char-mode-map)
             (eat-reload)))
 
+(use-package ghostel
+  :ensure t
+  :config
+  (customize-set-variable 'ghostel-readonly-fast-exit nil)
+  (customize-set-variable
+   'ghostel-keymap-exceptions
+   '("C-c" "C-x" "C-u" "C-h" "M-x" "M-o" "M-:" "C-\\" ;; defaults
+     "<f1>" "<f2>")))
+
 ;; [[ Eshell ]]
 
 (with-eval-after-load 'em-banner
