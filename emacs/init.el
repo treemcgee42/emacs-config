@@ -623,6 +623,8 @@ at once, so it's useful to have an easy way to tell which is which.")
           'disable-show-trailing-whitespace)
 (add-hook 'comint-mode-hook
           'disable-show-trailing-whitespace)
+(add-hook 'ghostel-mode-hook
+          'disable-show-trailing-whitespace)
 
 (defun tm42/highlight-region (beg end &optional face)
   "Highlight region from BEG to END with FACE (default: 'highlight)."
