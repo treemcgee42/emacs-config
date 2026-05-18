@@ -667,6 +667,8 @@ argument, unhighlight all regions in the buffer."
   :init
   (add-hook 'c++-mode-hook 'tm42/c-mode-hook))
 
+(use-package rust-mode :ensure t)
+
 (message "end section LANGUAGES")
 ;; --- End languages ---------------------------------------------------------------
 
