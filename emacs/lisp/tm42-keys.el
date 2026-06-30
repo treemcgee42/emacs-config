@@ -15,6 +15,8 @@
 
 (define-key global-map (kbd "C-c") tm42/leader-map)
 
+(define-key tm42/leader-map (kbd "h") #'tm42/hl-dwim)
+
 ;; C-c b = buffer prefix
 (defvar tm42/buffer-map (make-sparse-keymap))
 (define-key tm42/leader-map (kbd "b") tm42/buffer-map)

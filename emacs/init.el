@@ -367,6 +367,32 @@ correspond to the input on the prompt above it."
 
 ;; [[ Misc ]]
 
+(defun tm42/hl-dwim ()
+  (interactive)
+  (let* ((phrase (if (region-active-p)
+                     (buffer-substring-no-properties (region-beginning)
+                                                     (region-end))
+                   (thing-at-point 'symbol)))
+         (regexp (hi-lock-regexp-okay (regexp-quote phrase)))
+	 (hi-lock-auto-select-face t)
+	 (face (hi-lock-read-face-name)))
+    (unless (tm42/--unhighlight-dwim regexp)
+      (or (facep face) (setq face 'hi-yellow))
+      (unless hi-lock-mode (hi-lock-mode 1))
+      (hi-lock-set-pattern
+       regexp face nil nil
+       (if (and case-fold-search search-upper-case)
+           (isearch-no-upper-case-p regexp t)
+         case-fold-search)))))
+
+(defun tm42/--unhighlight-dwim (regexp)
+  (let ((did-unhighlight nil))
+    (dolist (lighter hi-lock-interactive-lighters)
+      (when (string= (substring-no-properties (car lighter)) regexp)
+        (hi-lock-unface-buffer regexp)
+        (setf did-unhighlight t)))
+    did-unhighlight))
+
 (customize-set-variable 'whitespace-style
                         '(face
                           spaces space-mark
@@ -941,6 +967,12 @@ E.g., a buffer for /src/Foo/bar.txt would return Foo."
         (kill-new markdown))))
 
   (require 'tm42-agenda)
+
+  ;; active Org-babel languages
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(;; other Babel languages
+     (plantuml . t)))
   )
 
 ;; Yeah I'm putting md in the org mode section, sue me.
