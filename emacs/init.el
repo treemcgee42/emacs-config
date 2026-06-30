@@ -1113,12 +1113,8 @@ interactively)."
                                face tm42/ml/normal-face)
                   (:eval
                    (if (buffer-modified-p)
-                       (propertize "%p"
-                                   'face
-                                   'tm42/ml/unsaved-face)
-                     (propertize "%p"
-                                 'face
-                                 'tm42/ml/saved-face)))
+                       (propertize "%p *")
+                     (propertize "%p -")))
                   (:propertize " "
                                face tm42/ml/normal-face)
 		  (:propertize "%4l:"
@@ -1280,7 +1276,7 @@ interactively)."
  '(indent-tabs-mode nil)
  '(org-agenda-window-setup 'current-window)
  '(org-log-into-drawer t)
- '(package-install-upgrade-built-in t t)
+ '(package-install-upgrade-built-in t)
  '(package-selected-packages
    '(ace-window acme-theme avy cape clipetty cond-let consult corfu corfu-terminal eglot
                 expand-region flymake font-lock-studio git-gutter
