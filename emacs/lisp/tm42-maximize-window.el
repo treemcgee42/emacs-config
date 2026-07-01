@@ -193,6 +193,22 @@ was expanded to."
 
 ;; --- Public API ---------------------------------------------------
 
+(defun tm42/--toggle-maximize-window (window)
+  (let ((mw (alist-get window tm42/maximizing-windows)))
+    (when (not mw)
+      (tm42/create-maximizing-window window)
+      (setq mw (alist-get window tm42/maximizing-windows)))
+    (if (tm42/--maximizing-window-is-maximized mw)
+        (progn
+          (tm42/--maximizing-window-unmaximize mw)
+          (tm42/delete-maximizing-window window))
+      (tm42/--maximizing-window-maximize
+       mw 'axiswise-siblings-and-children))))
+
+(defun tm42/toggle-maximize-window ()
+  (interactive)
+  (tm42/--toggle-maximize-window (selected-window)))
+
 (defun tm42/maximize-clicked-window (click)
   "Wrapper around `tm42/maximize-window' that determines the window
 to expand based on CLICK. Clicking again restores the layout."
@@ -201,17 +217,7 @@ to expand based on CLICK. Clicking again restores the layout."
                    'mode-line)
                (eq (posn-window (event-end click))
                    (posn-window (event-start click))))
-    (let* ((window (posn-window (event-start click)))
-           (mw (alist-get window tm42/maximizing-windows)))
-      (when (not mw)
-        (tm42/create-maximizing-window window)
-        (setq mw (alist-get window tm42/maximizing-windows)))
-      (if (tm42/--maximizing-window-is-maximized mw)
-          (progn 
-            (tm42/--maximizing-window-unmaximize mw)
-            (tm42/delete-maximizing-window window))
-        (tm42/--maximizing-window-maximize
-         mw 'axiswise-siblings-and-children)))))
+    (tm42/--toggle-maximize-window (posn-window (event-start click)))))
 
 (provide 'tm42-maximize-window)
 ;;; tm42-maximize-window.el ends here
